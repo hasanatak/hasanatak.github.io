@@ -290,7 +290,7 @@ width: 105%;
 
 
   const SLOT_UPGRADES = {
-    1: [
+    3: [
       { score: 30,  name: "بيت صغير", image: './garden/house1.png', scale: 4.5, elevation: 0, tip: "زهرة جميلة", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
       { score: 600, name: "بيت المؤمن", image: './garden/house2.png', scale: 4.5,elevation: 0  },
       { score: 1100, name: "منزل مبارك", image: './garden/house3.png', scale: 4.5,elevation: 0 },
@@ -302,7 +302,7 @@ width: 105%;
       { score: 4900,name: "روضة الدارين", image: './garden/house9.png', scale: 5.5,elevation: 0 },
       { score: 6200,name: "جنة الفردوس", image: './garden/house10.png', scale:5.5,elevation: 0 }
     ],
-    6: [
+    2: [
       { score: 10,  name: "زهرة", image: './garden/flower1.png', scale: 1.5, elevation: 0, tip: "زهرة جميلة", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
       { score: 500, name: "زهرة المؤمن", image: './garden/flower2.png', scale: 1.5,elevation: 0  },
       { score: 1000, name: "ريحان الجنة", image: './garden/flower3.png', scale: 1.5,elevation: 0 },
@@ -324,7 +324,7 @@ width: 105%;
       { score: 5800,name: "نخيل الجنة", image: './garden/palm7.png', scale: 2.5,elevation: 0 },
   
     ],
-    5: [
+    7: [
       { score: 30,  name: "حمار", image: './garden/pet1.png', scale: 2.5, elevation: 0, tip: "حيوان أليف", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
       { score: 900, name: "حصان", image: './garden/pet2.png', scale: 2.5,elevation: 0  },
       { score: 1500, name: "حصان ذهب", image: './garden/pet3.png', scale: 2.5,elevation: 0 },
@@ -344,7 +344,7 @@ width: 105%;
       { score: 5300,name: "نهر الكوثر", image: './garden/water5.png', scale: 2.5, elevation: 0},
   
     ],
-    2: [
+    6: [
       { score: 40,  name: "شجرة صغيرة", image: './garden/tree1.png', scale: 2.5, elevation: 0, tip: "ظل ظليل", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
       { score: 470, name: "شجرة وارفة", image: './garden/tree2.png', scale: 2.5,elevation: 0  },
       { score: 2350, name: "دوحة عظيمة", image: './garden/tree3.png', scale: 2.5,elevation: 0 },
@@ -357,7 +357,7 @@ width: 105%;
       { score: 6050,name: "أشجار الجنة", image: './garden/tree10.png', scale: 2.5,elevation: 0 },
   
     ],
-    3: [
+    1: [
       { score: 40,  name: "بئر صغيرة", image: './garden/well1.png', scale: 2.5, elevation: 0, tip: "ماء مبارك", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
       { score: 470, name: "بئر عذبة", image: './garden/well2.png', scale: 2.5,elevation: 0  },
       { score: 1490, name: "مورد الماء", image: './garden/well3.png', scale: 2.5,elevation: 0 },
