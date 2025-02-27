@@ -504,6 +504,11 @@ document.head.appendChild(styleElement);
             titleWithoutEmoji = titleWithoutEmoji.replace(/سورة\s*/, '').trim(); // Remove "سورة "
             titleDiv.textContent = `${titleWithoutEmoji} (${sora.type})`; // Include type if needed
             soraCard.appendChild(titleDiv);
+            //append event listener so when clicking on titleDiv it will click on .actionButton in same soraCard
+            titleDiv.addEventListener('pointerdown', () => {
+                actionButton.click();
+            });
+
 
             const extractedEmoji = extractSoraEmoji(sora.title);
             if (extractedEmoji) { // Only add emoji div if emoji is extracted
@@ -1827,11 +1832,32 @@ function createAutoplayButton() {
         autoplayButton = document.createElement('button');
         autoplayButton.id = "autoplayButton";
         autoplayButton.style.position = "fixed";
-        autoplayButton.style.top = "10px";
+        autoplayButton.style.top = "70px"; 
         autoplayButton.style.left = "10px";
         autoplayButton.style.zIndex = "1000";
         autoplayButton.style.display = "none"; // Initially hidden, shown when autoplay starts
-        autoplayButton.textContent = "Pause Autoplay"; // Initial text
+        autoplayButton.style.padding = "10px 20px";
+        autoplayButton.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+        autoplayButton.style.backdropFilter = "blur(8px)";
+        autoplayButton.style.WebkitBackdropFilter = "blur(8px)"; // For Safari
+        autoplayButton.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+        autoplayButton.style.borderRadius = "10px";
+        autoplayButton.style.color = "white";
+        autoplayButton.style.cursor = "pointer";
+        autoplayButton.style.transition = "all 0.3s ease";
+        autoplayButton.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+        autoplayButton.textContent = "ايقاف الصوت"; // Initial text
+        
+        // Add hover effect
+        autoplayButton.onmouseover = () => {
+            autoplayButton.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+            autoplayButton.style.transform = "translateY(-2px)";
+        };
+        autoplayButton.onmouseout = () => {
+            autoplayButton.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+            autoplayButton.style.transform = "translateY(0)";
+        };
+
         document.body.appendChild(autoplayButton);
 
         autoplayButton.addEventListener('click', () => {
@@ -1841,12 +1867,12 @@ function createAutoplayButton() {
 
                 if (isAutoPlayPaused) {
                     audioElement.pause();
-                    autoplayButton.textContent = "Resume Autoplay";
+                    autoplayButton.textContent = "شغل قرائة الشيخ";
                     audioElement.onended = null; // Disable autoplay when paused
                     console.log("Autoplay Paused.");
                 } else {
                     audioElement.play();
-                    autoplayButton.textContent = "Pause Autoplay";
+                    autoplayButton.textContent = "وقف قرائة الشيخ";
                     setupAutoPlayOnEnded(audioElement, currentSoraId, currentAyaId); // Re-enable autoplay
                     console.log("Autoplay Resumed.");
                 }

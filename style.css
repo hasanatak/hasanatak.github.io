@@ -1110,9 +1110,11 @@ background: #888;  /*  Darker on hover */
 }
 /* Modal Close Button Style (if not already defined) */
 .close-button {
-    color: #aaa;
-    float: left; /* Changed to left to be in top left for Arabic */
-    font-size: 28px;
+    position: sticky;
+    color: #f4eaea;
+    float: right;
+    transform: translate(39px, -32px);
+    font-size: 29px;
     font-weight: bold;
     cursor: pointer;
 }
