@@ -505,6 +505,9 @@ document.head.appendChild(styleElement);
             numberDiv.classList.add('sora-card-number');
             numberDiv.textContent = sora.index;
             soraCard.appendChild(numberDiv);
+            numberDiv.addEventListener('pointerdown', () => {
+                actionButton.click();
+            });
 
             const titleDiv = document.createElement('div');
             titleDiv.classList.add('sora-card-title');

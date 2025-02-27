@@ -314,14 +314,26 @@ width: 105%;
       { score: 5000,name: "زنبق", image: './garden/flower9.png', scale: 1.5,elevation: 0 },
       { score: 5500,name: "فُل", image: './garden/flower10.png', scale: 1.5,elevation: 0 }
     ],
+    8: [
+      { score: 20,  name: "زهرة", image: './garden/flower1.png', scale: 1.5, elevation: 0, tip: "زهرة جميلة", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
+      { score: 600, name: "زهرة المؤمن", image: './garden/flower2.png', scale: 1.5,elevation: 0  },
+      { score: 1060, name: "ريحان الجنة", image: './garden/flower3.png', scale: 1.5,elevation: 0 },
+      { score: 2560,name: "وردة طيبة", image: './garden/flower4.png', scale: 1.5,elevation: 0 },
+      { score: 3060,name: "باقة أمل", image: './garden/flower5.png', scale: 1.5, elevation: 0},
+      { score: 3560,name: "نرجس", image: './garden/flower6.png', scale: 1.5,elevation: 0 },
+      { score: 4060,name: "ياسمين", image: './garden/flower7.png', scale: 1.5,elevation: 0 },
+      { score: 4560,name: "قرنفل", image: './garden/flower8.png', scale: 1.5,elevation: 0 },
+      { score: 5060,name: "زنبق", image: './garden/flower9.png', scale: 1.5,elevation: 0 },
+      { score: 5560,name: "فُل", image: './garden/flower10.png', scale: 1.5,elevation: 0 }
+    ],
     0: [
-      { score: 30,  name: "نخلة صغيرة", image: './garden/palm1.png', scale: 2.5, elevation: 0, tip: "شجرة مباركة", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
-      { score: 700, name: "نخلة باسقة", image: './garden/palm2.png', scale: 2.5,elevation: 0  },
-      { score: 1800, name: "نخلة مثمرة", image: './garden/palm3.png', scale: 2.5,elevation: 0 },
-      { score: 2800,name: "بستان النخيل", image: './garden/palm4.png', scale: 2.5,elevation: 0 },
-      { score: 3800,name: "ظل النخيل", image: './garden/palm5.png', scale: 2.5, elevation: 0},
-      { score: 4800,name: "فسيلة نخل", image: './garden/palm6.png', scale: 2.5,elevation: 0 },
-      { score: 5800,name: "نخيل الجنة", image: './garden/palm7.png', scale: 2.5,elevation: 0 },
+      { score: 30,  name: "نخلة صغيرة", image: './garden/palm1.png', scale: 3.5, elevation: 0, tip: "شجرة مباركة", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
+      { score: 700, name: "نخلة باسقة", image: './garden/palm2.png', scale: 3.5,elevation: 0  },
+      { score: 1800, name: "نخلة مثمرة", image: './garden/palm3.png', scale: 3.5,elevation: 0 },
+      { score: 2800,name: "بستان النخيل", image: './garden/palm4.png', scale: 3.5,elevation: 0 },
+      { score: 3800,name: "ظل النخيل", image: './garden/palm5.png', scale: 3.5, elevation: 0},
+      { score: 4800,name: "فسيلة نخل", image: './garden/palm6.png', scale: 3.5,elevation: 0 },
+      { score: 5800,name: "نخيل الجنة", image: './garden/palm7.png', scale: 3.5,elevation: 0 },
   
     ],
     7: [
@@ -345,16 +357,16 @@ width: 105%;
   
     ],
     6: [
-      { score: 40,  name: "شجرة صغيرة", image: './garden/tree1.png', scale: 2.5, elevation: 0, tip: "ظل ظليل", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
-      { score: 470, name: "شجرة وارفة", image: './garden/tree2.png', scale: 2.5,elevation: 0  },
-      { score: 2350, name: "دوحة عظيمة", image: './garden/tree3.png', scale: 2.5,elevation: 0 },
-      { score: 2950,name: "شجرة مباركة", image: './garden/tree4.png', scale: 2.5,elevation: 0 },
-      { score: 3350,name: "ظل شجرة", image: './garden/tree5.png', scale: 2.5,elevation: 0 },
-      { score: 3950,name: "أغصان مورقة", image: './garden/tree6.png', scale: 2.5, elevation: 0},
-      { score: 4350,name: "غابة صغيرة", image: './garden/tree7.png', scale: 2.5,elevation: 0 },
-      { score: 4950,name: "بستان الأشجار", image: './garden/tree8.png', scale: 2.5,elevation: 0 },
-      { score: 5350,name: "روضة الأشجار", image: './garden/tree9.png', scale: 2.5,elevation: 0 },
-      { score: 6050,name: "أشجار الجنة", image: './garden/tree10.png', scale: 2.5,elevation: 0 },
+      { score: 40,  name: "شجرة صغيرة", image: './garden/tree1.png', scale: 3.5, elevation: 0, tip: "ظل ظليل", callback: () => { console.log("Flower clicked!"); alert("You clicked a flower!"); } },
+      { score: 470, name: "شجرة وارفة", image: './garden/tree2.png', scale: 3.5,elevation: 0  },
+      { score: 2350, name: "دوحة عظيمة", image: './garden/tree3.png', scale: 3.5,elevation: 0 },
+      { score: 2950,name: "شجرة مباركة", image: './garden/tree4.png', scale: 3.5,elevation: 0 },
+      { score: 3350,name: "ظل شجرة", image: './garden/tree5.png', scale: 3.5,elevation: 0 },
+      { score: 3950,name: "أغصان مورقة", image: './garden/tree6.png', scale: 3.5, elevation: 0},
+      { score: 4350,name: "غابة صغيرة", image: './garden/tree7.png', scale: 3.5,elevation: 0 },
+      { score: 4950,name: "بستان الأشجار", image: './garden/tree8.png', scale: 3.5,elevation: 0 },
+      { score: 5350,name: "روضة الأشجار", image: './garden/tree9.png', scale: 3.5,elevation: 0 },
+      { score: 6050,name: "أشجار الجنة", image: './garden/tree10.png', scale: 3.5,elevation: 0 },
   
     ],
     1: [
@@ -371,7 +383,10 @@ width: 105%;
   
     ],
 
- 
+    // 5: [
+    //   { score: 0,  name: "ساعدنا", image: 'https://png.pngtree.com/png-clipart/20231101/original/pngtree-help-road-sign-picture-image_13224995.png', scale: 2.5, elevation: 0, tip: "سبسكرايب", callback: () => {  } },
+
+    // ],
   };
 
 
