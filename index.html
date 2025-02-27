@@ -246,51 +246,61 @@
 
 
             let isDragging = false; // Local dragging flag for each card
+let lastClickTime = 0; // Timestamp of the last click/tap
+const doubleClickThreshold = 300; // Time in milliseconds to consider a double click/tap
 
-            soraCard.addEventListener('mousedown', () => {
-                isDragging = false; // Reset flag on mousedown
-            });
+function handleSoraCardClick(sora, event) {
+    if (!isDragging) {
+        // Check if the click target or its parent is the action-button
+        if (event.target.closest('.action-button')) {
+            event.stopPropagation(); // Prevent the soraCard click
+            // openReaderModeModal(sora.index); // Your reader mode logic here
+        } else {
+            const currentTime = new Date().getTime();
+            const timeDiff = currentTime - lastClickTime;
 
-            soraCard.addEventListener('mousemove', () => {
-                isDragging = true; // Set flag if mouse moves after mousedown
-            });
+            if (timeDiff < doubleClickThreshold) {
+                // Double click/tap detected
+                console.log("Double Click/Tap - Opening Modal (Sora):", sora); // Replace with your double-click action
+                openSoraModal(sora); // Open modal on double click/tap
+                lastClickTime = 0; // Reset lastClickTime to prevent immediate single click action
+            } else {
+                // Single click/tap detected (or first click of a potential double click)
+                console.log("Single Click/Tap - Opening Modal (Sora):", sora); // Replace with your single-click action
+                openSoraModal(sora); // Open modal on single click/tap
+                lastClickTime = currentTime; // Update lastClickTime for double click detection
+            }
+        }
+    }
+    isDragging = false; // Reset flag after mouseup/touchend
+}
 
-            soraCard.addEventListener('mouseup', (event) => {
-                if (!isDragging) {
-                    // Check if the click target or its parent is the readerModeIcon
-                    if (event.target.closest('.action-button')) {
-                        event.stopPropagation(); // Prevent the soraCard click
-                        // openReaderModeModal(sora.index);
-                    } else {
-                        // Handle the soraCard click (open modal) only if not dragging
-                        openSoraModal(sora);
-                    }
-                }
-                isDragging = false; // Reset flag after mouseup
-            });
 
-            soraCard.addEventListener('touchstart', () => {
-                isDragging = false; // Reset flag on touchstart
-            });
+soraCard.addEventListener('mousedown', () => {
+    isDragging = false;
+});
 
-            soraCard.addEventListener('touchmove', () => {
-                isDragging = true; // Set flag if touch moves after touchstart
-            });
+soraCard.addEventListener('mousemove', () => {
+    isDragging = true;
+});
 
-            soraCard.addEventListener('touchend', (event) => {
-                if (!isDragging) {
-                    // Check if the click target or its parent is the readerModeIcon
-                    if (event.target.closest('.action-button')) {
-                        event.stopPropagation(); // Prevent the soraCard click
-                        // openReaderModeModal(sora.index);
-                    } else {
-                        // Handle the soraCard click (open modal) only if not dragging
-                        openSoraModal(sora);
-                    }
-                }
-                isDragging = false; // Reset flag after touchend
-            });
+soraCard.addEventListener('mouseup', (event) => {
+    handleSoraCardClick(sora, event);
+});
 
+
+soraCard.addEventListener('touchstart', () => {
+    isDragging = false;
+});
+
+soraCard.addEventListener('touchmove', () => {
+    isDragging = true;
+});
+
+soraCard.addEventListener('touchend', (event) => {
+    handleSoraCardClick(sora, event);
+});
+       
 //AHMED
 const actionButton = document.createElement('div');
 actionButton.classList.add('action-button');
