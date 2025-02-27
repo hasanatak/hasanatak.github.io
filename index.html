@@ -1,0 +1,3575 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasanatak - حسناتك</title>
+    <link rel="icon" href="https://cdn3d.iconscout.com/3d/premium/thumb/quran-3d-illustration-download-in-png-blend-fbx-gltf-file-formats--muslim-book-islamic-arabic-sacred-pack-culture-religion-festivals-illustrations-4179695.png?f=webp">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style.css">
+
+
+</head>
+<body onload="init();">
+
+<!-- --- Header --- -->
+
+<!-- --- Main Menu --- -->
+<!-- Menu is now integrated in the header -->
+
+<!-- --- Main Content Area --- -->
+ <main class="sora-grid">  <!-- Adjusted margin-top -->
+    <!-- Sora Example (Repeat for each Sora) -->
+    <!-- This will be dynamically generated -->
++<div id="parentResults">
++    <div id="resultsCount"></div>
++    <div id="results" style="text-align: center; margin-top: 10px;">لم يتم البحث بعد.</div>
++    <div id="resultsCount2"></div>
++</div>
+ </main>
+
+
+<!-- --- Tooltip --- -->
+
+   <div class="tooltip" id="tooltip">
+        <button class="tooltip-close" onclick="hideTooltip()">×</button>
+        <iframe id="tafsirIframe" src="" title="Tafsir"></iframe>
+    </div>
+
+<!-- --- Reader Mode Modal --- -->
+<div id="readerModeModal" class="modal" style="display: none;">
+    <div class="modal-content reader-modal-content">
+        <span class="close-button" onclick="closeReaderModeModal()">×</span>
+        <h2 class="modal-title">وضع القراءة</h2>
+
+        <div class="reader-controls">
+            <button id="playPauseButton" onclick="togglePlayPauseReaderMode()">
+                <i id="playPauseIcon" class="fas fa-play"></i>
+            </button>
+            <button onclick="adjustReaderSpeed(-0.1)">- Speed</button>
+            <span id="readerSpeedDisplay">2.0x</span>
+            <button onclick="adjustReaderSpeed(0.1)">+ Speed</button>
+            <button onclick="adjustReaderFont(2)">+</button>
+            <button onclick="adjustReaderFont(-2)">-</button>
+        </div>
+
+        <div id="readerTextDisplay" class="reader-text-display">
+            <!-- Word by word text will be displayed here -->
+        </div>
+        <div id="readerHasanatDisplay" class="reader-hasanat-display">
+            الحسنات المكتسبة في وضع القراءة: <span id="currentReaderHasanat">0</span>
+        </div>
+    </div>
+</div>
+
+<!-- sora modal-->
+<div id="soraModal" class="modal" style="display:none">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeSoraModal()">×</span>
+    <div id="modalContent">
+      <!-- Content will be dynamically inserted here -->
+    </div>
+  </div>
+</div>
+ <script>
+
+    function toggleDropdown() {
+        document.getElementById("searchDropdown").classList.toggle("show");
+    }
+
+    // Close the dropdown if the user clicks outside of it.
+    window.onclick = function(event) {
+        if (!event.target.matches('.dropdown-button') && !event.target.closest('.dropdown-content')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            for (var i = 0; i < dropdowns.length; i++) {
+                var openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+
+
+    // --- Global Variables ---
+    let currentTooltipAya = null;
+    const tooltip = document.getElementById("tooltip");
+    let expandedCard = null;
+    let sorasData = [];
+    let isFanMode = true; // Start in fan mode
+    let numRowsForCards = 3; // Number of rows for card distribution
+    let rowContainers = []; // To hold row containers for card view
+    let isDraggingCard = false; // Flag to track card dragging
+
+    // --- Initialization and Event Listeners ---
+    async function init() {
+        setupEventListeners();
+        await loadQuranData();
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        createSoraCards();
+    }
+
+    let charCount = 0;
+
+// --- Load Quran Data from quran.txt ---
+    async function loadQuranData() {
+        try {
+            const response = await fetch('quran.txt');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const text = await response.text();
+            sorasData = parseQuranText(text);
+            // After loading data, store original HTML for verses (ayas)
+            storeOriginalAyatHTML();
+        } catch (error) {
+            console.error("Could not load quran.txt:", error);
+            document.querySelector('.sora-grid').innerHTML = '<p>Error loading Quran data.</p>';
+        }
+    }
+
+    function parseQuranText(text) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const surahDivs = doc.querySelectorAll('div.sora');
+        const surahs = [];
+
+        surahDivs.forEach(surahDiv => {
+            const surahId = surahDiv.getAttribute('id');
+            const surahIndex = parseInt(surahId.replace('s', ''), 10);
+            let title = `سورة ${surahIndex}`;
+            let type = "";
+            let ayaCount = 0;
+            let arbaaCount = "";
+            let backgroundImageSrc = ""; // New property for background image
+
+            const surahInfo = surahDiv.querySelector('.sora-info');
+            if (surahInfo) {
+                const infoText = surahInfo.textContent.trim();
+                const parts = infoText.split('-').map(part => part.trim());
+                if (parts.length >= 2) title = parts[1];
+                if (parts.length >= 3) type = parts[2];
+                const details = surahInfo.querySelector('details');
+                if (details) {
+                    const ayaCountSpan = details.querySelector('.ayatCount');
+                    const arbaaCountSpan = details.querySelector('.arbaaCount');
+                    ayaCount = ayaCountSpan ? parseInt(ayaCountSpan.textContent.trim(), 10) : 0;
+                    arbaaCount = arbaaCountSpan ? arbaaCountSpan.textContent.trim() : "";
+                }
+            }
+
+            const ayat = [];
+            const ayaSpans = surahDiv.querySelectorAll('span.aya');
+            ayaSpans.forEach(ayaSpan => {
+                const childSpans = ayaSpan.querySelectorAll(':scope > span');
+                let ayaText = "";
+                childSpans.forEach(child => {
+                    const childText = child.textContent.trim();
+                    if (childText) ayaText += childText + " ";
+                });
+                ayat.push(ayaText.trim());
+            });
+
+            surahs.push({
+                index: surahIndex,
+                title,
+                type,
+                ayaCount,
+                arbaaCount,
+                ayat,
+            });
+        });
+        return surahs;
+    }
+
+     function storeOriginalAyatHTML() {
+        const ayaElements = document.querySelectorAll(".aya");
+        ayaElements.forEach(el => {
+            el.dataset.originalHtml = el.innerHTML; // Store original HTML
+        });
+    }
+
+    function extractSoraEmoji(soraTitle) {
+        const kaabaEmoji = '🕋';
+        const moonEmoji = '🌙';
+
+        if (soraTitle.includes(kaabaEmoji)) {
+            return kaabaEmoji;
+        } else if (soraTitle.includes(moonEmoji)) {
+            return moonEmoji;
+        }
+        return null; // Return null if no emoji found, not default book emoji
+    }
+
+
+    // --- Function to Generate Sora Cards in Card View ---
+    function createSoraCards() {
+        const soraGrid = document.querySelector('.sora-grid');
+        soraGrid.innerHTML = ''; // Clear existing content
+        rowContainers = []; // Clear existing row containers
+
+        // Calculate card distribution
+        const totalSoras = sorasData.length;
+        const cardsPerRow = Math.ceil(totalSoras / numRowsForCards);
+
+        // Create row containers
+        for (let i = 0; i < numRowsForCards; i++) {
+            const rowContainer = document.createElement('div');
+            rowContainer.classList.add('sora-row');
+            soraGrid.appendChild(rowContainer);
+            rowContainers.push(rowContainer);
+        }
+
+        sorasData.forEach((sora, index) => {
+            const soraCard = document.createElement('div');
+            soraCard.classList.add('sora-card', 'sora-card-fan'); // Add fan class for initial card view
+            soraCard.id = `s${sora.index}`;
+
+            // Set background image with lazy loading
+            const imagePath = `assets/${sora.index}.png`;
+            // Create a new image element to handle lazy loading
+            const img = new Image();
+            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // Tiny transparent placeholder
+            img.dataset.src = imagePath; // Store actual image path
+            
+            // Use Intersection Observer for lazy loading
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        soraCard.style.backgroundImage = `url('${imagePath}')`;
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+            
+            observer.observe(soraCard);
+
+
+            let isDragging = false; // Local dragging flag for each card
+
+            soraCard.addEventListener('mousedown', () => {
+                isDragging = false; // Reset flag on mousedown
+            });
+
+            soraCard.addEventListener('mousemove', () => {
+                isDragging = true; // Set flag if mouse moves after mousedown
+            });
+
+            soraCard.addEventListener('mouseup', (event) => {
+                if (!isDragging) {
+                    // Check if the click target or its parent is the readerModeIcon
+                    if (event.target.closest('.action-button')) {
+                        event.stopPropagation(); // Prevent the soraCard click
+                        // openReaderModeModal(sora.index);
+                    } else {
+                        // Handle the soraCard click (open modal) only if not dragging
+                        openSoraModal(sora);
+                    }
+                }
+                isDragging = false; // Reset flag after mouseup
+            });
+
+            soraCard.addEventListener('touchstart', () => {
+                isDragging = false; // Reset flag on touchstart
+            });
+
+            soraCard.addEventListener('touchmove', () => {
+                isDragging = true; // Set flag if touch moves after touchstart
+            });
+
+            soraCard.addEventListener('touchend', (event) => {
+                if (!isDragging) {
+                    // Check if the click target or its parent is the readerModeIcon
+                    if (event.target.closest('.action-button')) {
+                        event.stopPropagation(); // Prevent the soraCard click
+                        // openReaderModeModal(sora.index);
+                    } else {
+                        // Handle the soraCard click (open modal) only if not dragging
+                        openSoraModal(sora);
+                    }
+                }
+                isDragging = false; // Reset flag after touchend
+            });
+
+//AHMED
+const actionButton = document.createElement('div');
+actionButton.classList.add('action-button');
+// Using a simple SVG 'menu' icon (you can replace with your preferred SVG)
+actionButton.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 4H21V6H3V4ZM3 11H21V13H3V11ZM3 18H21V20H3V18Z" fill="currentColor"/>
+    </svg>`;
+
+const bubbleButtons = [
+    {
+        icon: 'fa-book-reader',
+        title: 'وضع القراءة',
+        callback: () => openReaderModeModal(sora.index),
+        gradient: 'linear-gradient(to right, #6a11cb 0%, #2575fc 100%)'
+    },
+    {
+        icon: 'fa-headphones',
+        title: 'مشاركة',
+        callback: () => playAudio(sora.index,1,true),
+        gradient: 'linear-gradient(to right, #ff6a00, #ee0979)'
+    },
+    {
+        icon: 'fa-star',
+        title: 'المفضلة',
+        callback: () => toggleFavorite(sora.index),
+        gradient: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)'
+    }
+];
+
+// Create container for bubble buttons
+const bubbleContainer = document.createElement('div');
+bubbleContainer.classList.add('bubble-container');
+bubbleContainer.style.display = 'none';
+document.body.appendChild(bubbleContainer);
+
+bubbleButtons.forEach((btn, index) => {
+    const bubble = document.createElement('button');
+    bubble.classList.add('bubble-button');
+    bubble.innerHTML = `<i class="fas ${btn.icon}"></i>`;
+    bubble.title = btn.title;
+    bubble.style.transform = 'scale(0)';
+    bubble.addEventListener('click', (e) => {
+        e.stopPropagation();
+        btn.callback();
+        hideBubbleButtons();
+    });
+    bubble.style.background = btn.gradient;
+    bubbleContainer.appendChild(bubble);
+});
+
+function showBubbleButtons(buttonRect) {
+    if (bubbleContainer.style.display === 'block') { // Check if bubbles are already shown
+        hideBubbleButtons(); // Hide existing bubbles first
+        // Wait for the hide animation to complete before showing new ones
+        setTimeout(() => {
+            bubbleContainer.style.display = 'block';
+            animateBubbleButtons(buttonRect);
+        }, 300); // Wait for hide animation duration (0.3s)
+    } else {
+        bubbleContainer.style.display = 'block';
+        animateBubbleButtons(buttonRect);
+    }
+}
+
+function animateBubbleButtons(buttonRect) {
+    const radius = 50; // Radius of the arc
+    const totalButtons = bubbleButtons.length;
+    const angleStep = Math.PI / (totalButtons + 1);
+
+    bubbleContainer.style.left = `${buttonRect.right}px`; // Position relative to the right edge
+    bubbleContainer.style.top = `${buttonRect.top}px`;
+
+    bubbleButtons.forEach((_, index) => {
+        const button = bubbleContainer.children[index];
+        // Angles for top-right: starting from a small angle and going towards PI/2
+        const angle =  (angleStep * (index + 1)); // Start from 0 and move towards PI/2
+        const x = radius * Math.cos(angle);
+        const y = -radius * Math.sin(angle); // Negative y to go upwards
+
+        button.style.transform = 'scale(0)';
+        button.style.position = 'absolute';
+
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+            button.style.left = `${x}px`;
+            button.style.top = `${y}px`;
+        }, index * 100);
+    });
+}
+
+
+function hideBubbleButtons() {
+    bubbleContainer.querySelectorAll('.bubble-button').forEach(button => {
+        button.style.transform = 'scale(0)';
+    });
+    setTimeout(() => {
+        bubbleContainer.style.display = 'none';
+    }, 300);
+}
+
+actionButton.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    const buttonRect = actionButton.getBoundingClientRect();
+    showBubbleButtons(buttonRect);
+});
+
+
+
+document.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('.bubble-container') && !e.target.closest('.action-button')) {
+        hideBubbleButtons();
+    }
+});
+
+if (soraCard) {
+    soraCard.appendChild(actionButton);
+} else {
+    console.error('sora-card element not found. Please ensure you have an element with the class "sora-card" (or your chosen selector) in your HTML.');
+    document.body.appendChild(actionButton); // Fallback
+}
+
+
+// Add required CSS
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+    .sora-card {
+        position: relative; /* Important for action-button positioning */
+    }
+
+    .action-button {
+        position: absolute; /* Positioned relative to sora-card */
+        top: 5px;
+        left: 5px;
+        z-index: 10;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 50%;
+        width: 20px; /* Even smaller width */
+        height: 20px; /* Even smaller height */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        color: white; /* Icon color */
+        transition: background-color 0.3s ease, transform 0.2s ease; /* Added transform transition */
+        padding: 0; /* Remove padding if any */
+    }
+
+    .action-button:hover {
+        /* Example hover gradient - customize colors */
+        background: linear-gradient(to right, #3ab7bf, #fc0);
+        transform: scale(1.1); /* Scale up on hover */
+    }
+
+    /* Style the SVG icon inside action-button */
+    .action-button svg {
+        width: 60%; /* Adjust SVG icon size within button */
+        height: 60%;
+    }
+
+
+    .bubble-container {
+        position: fixed;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .bubble-button {
+        position: absolute;
+        width: 25px; /* Slightly larger than action button for visual hierarchy */
+        height: 25px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        pointer-events: auto;
+        color: white;
+        backdrop-filter: blur(5px);
+    }
+
+    .bubble-button:hover {
+        opacity: 0.9;
+        transform: scale(1.1) !important;
+    }
+
+    .bubble-button i {
+        font-size: 0.7em;
+    }
+`;
+document.head.appendChild(styleElement);
+//end ahmed
+
+            // --- New Structure for Sora Card ---
+            const numberDiv = document.createElement('div');
+            numberDiv.classList.add('sora-card-number');
+            numberDiv.textContent = sora.index;
+            soraCard.appendChild(numberDiv);
+
+            const titleDiv = document.createElement('div');
+            titleDiv.classList.add('sora-card-title');
+            // Remove emoji and "سورة " from title for title display
+            let titleWithoutEmoji = sora.title.replace(/[\u{1F54B}\u{1F319}]/u, '').trim();
+            titleWithoutEmoji = titleWithoutEmoji.replace(/سورة\s*/, '').trim(); // Remove "سورة "
+            titleDiv.textContent = `${titleWithoutEmoji} (${sora.type})`; // Include type if needed
+            soraCard.appendChild(titleDiv);
+
+            const extractedEmoji = extractSoraEmoji(sora.title);
+            if (extractedEmoji) { // Only add emoji div if emoji is extracted
+                const emojiDiv = document.createElement('div');
+                emojiDiv.classList.add('sora-card-emoji');
+                emojiDiv.textContent = extractedEmoji;
+                soraCard.appendChild(emojiDiv); // Append emoji div after title div
+            }
+            // --- End New Structure ---
+
+
+            // Distribute cards to rows
+            const rowIndex = Math.floor(index / cardsPerRow) % numRowsForCards;
+            rowContainers[rowIndex].appendChild(soraCard);
+        });
+
+        // Apply card view styling after cards are created and distributed
+        setupCardView();
+        setupDynamicEventListeners();
+        storeOriginalAyatHTML(); // Call storeOriginalAyatHTML here after initial card creation
+    }
+
+    // Function to open the Sora modal
+    function openSoraModal(sora) {
+        const modal = document.getElementById('soraModal');
+        const modalContentDiv = document.getElementById('modalContent');
+        modalContentDiv.innerHTML = ''; // Clear previous content
+
+          if (sora.index !== 1) {
+                const basmala = document.createElement('div');
+                basmala.classList.add('basmala');
+                basmala.textContent = 'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ';
+                modalContentDiv.appendChild(basmala);
+            }
+
+
+        const ayaContainer = document.createElement('div');
+        ayaContainer.classList.add('aya-container');
+
+        sora.ayat.forEach((ayaText, ayaIndex) => {
+            const ayaSpan = document.createElement('span');
+            ayaSpan.classList.add('aya');
+            ayaSpan.id = `s${sora.index}a${ayaIndex + 1}`; // Keep IDs for consistency
+            ayaSpan.innerHTML = ayaText + ' ';
+             ayaSpan.addEventListener('click', showTooltip); // tooltips work inmodal also
+
+        
+
+            ayaContainer.appendChild(ayaSpan);
+        });
+
+        modalContentDiv.appendChild(ayaContainer);
+        storeOriginalAyatHTML(); // Store original HTML for modal ayat after they are created
+        modal.style.display = 'flex'; // Ensure modal is flex to center content
+        modal.style.display = 'block';
+    }
+
+    function closeSoraModal() {
+      const modal = document.getElementById('soraModal');
+      modal.style.display = 'none';
+    }
+
+
+
+
+    function setupCardView() {
+        const soraGrid = document.querySelector('.sora-grid');
+        soraGrid.classList.add('sora-grid-fan');
+        soraGrid.style.display = 'block'; // Ensure grid is block for flexbox to work
+        soraGrid.style.overflowX = 'auto'; // Enable horizontal scrolling
+        soraGrid.style.whiteSpace = 'nowrap'; // Prevent card wrapping
+
+        rowContainers.forEach((row, index) => {
+            row.style.position = 'relative'; // Ensure row containers are positioned for card layout
+            row.style.display = 'flex'; // Use flexbox for rows
+            row.style.flexDirection = 'row'; // Ensure cards are in a row
+            row.style.justifyContent = 'flex-start'; // Align cards to the start of the row
+            row.style.alignItems = 'center'; // Align items in the center vertically
+            row.style.overflowX = 'auto'; //
+            row.style.overflowY = 'hidden'; // Hide vertical overflow
+            row.style.whiteSpace = 'nowrap'; // Prevent card wrapping within rows
+            row.style.padding = '10px 0'; // Add padding for rows
+          //ahmed
+            if(index == 1){
+            row.style.bottom = "30px"
+           }else if(index == 2){
+            row.style.bottom = "60px"
+
+           }
+        });
+
+        const soraCards = document.querySelectorAll('.sora-card');
+        soraCards.forEach(card => {
+            card.style.display = 'inline-block'; // Display cards inline for horizontal layout
+            card.style.verticalAlign = 'top'; // Align cards to the top
+            card.style.marginRight = '10px'; // Spacing between cards
+             card.style.padding = '15px'; // Add padding to the card itself for better spacing
+            card.style.textAlign = 'center'; // Center content within the card
+             // Ensure background image covers the card
+            card.style.backgroundSize = 'cover';
+            card.style.backgroundRepeat = 'no-repeat';
+            card.style.backgroundPosition = 'center';
+        });
+        initializeScrollAndDrag(); // Initialize drag and scroll after setting up card view
+    }
+
+
+    function toggleSoraCard(card) {
+        if (expandedCard === card) {
+            card.classList.remove('expanded');
+            expandedCard = null;
+             if(currentTooltipAya && card.contains(currentTooltipAya)){
+                 hideTooltip();
+             }
+
+        } else {
+            if (expandedCard) {
+                expandedCard.classList.remove('expanded');
+            }
+
+            card.classList.add('expanded');
+            expandedCard = card;
+
+            const ayat = card.querySelectorAll(".aya");
+            ayat.forEach(ayaSpan => ayaSpan.classList.remove("hidden"));
+
+            const basmala = card.querySelector(".basmala");
+            if(basmala) basmala.classList.remove("hidden");
+
+        }
+        setTimeout(()=> gotoElement(card),0);
+
+    }
+
+    function setupDynamicEventListeners(){
+        document.querySelectorAll('.aya').forEach(aya => {
+            aya.addEventListener('click', showTooltip);
+        });
+    }
+
+    function setupEventListeners() {
+      // Changed to 'left' and added 'marginLeft' for the menu button
+        // document.getElementById('txtGotoSora').addEventListener('input', handleSoraInput);
+        // document.getElementById('txtGotoAya').addEventListener('input', handleAyaInput);
+        // document.getElementById("searchBox").addEventListener("keydown", handleSearchEnter);
+        // document.getElementById("toggleCheckboxRemoveTashkel").addEventListener("change", toggleTashkeel);
+        // document.getElementById("toggleDarkMode").addEventListener("change", toggleDarkMode);
+
+         // Add touch event listeners for mobile
+        document.addEventListener('touchstart', handleTouchEvents);
+        document.addEventListener('touchend', handleTouchEvents);
+        document.addEventListener('touchmove', handleTouchEvents);
+        document.addEventListener('touchcancel', handleTouchEvents); // Handle touchcancel
+
+        // Prevent scrolling the entire page on touch devices when interacting with specific elements
+       document.querySelector(".sora-grid").addEventListener("touchmove", (e) => {e.preventDefault();}, { passive: false });
+    }
+
+
+   function handleTouchEvents(event) {
+    //  console.log("handleTouchEvents",event.type)
+      if (event.type === 'touchstart') {
+        //  console.log("touchstart");
+
+      } else if (event.type === 'touchend') {
+          //console.log("touchend");
+      } else if (event.type === 'touchmove') {
+          //console.log("touchmove");
+           if (!event.target.closest("#tafsirIframe") && !event.target.closest("#tooltip")) {
+                hideTooltip();
+            }
+      } else if (event.type === 'touchcancel') { // Handle touchcancel
+            //console.log("touchcancel");
+
+      }
+  }
+  function createWidgets() {
+    // --- Main Navigation Widget Container ---
+    const navWidget = createNavWidget();
+    document.body.appendChild(navWidget);
+
+    // --- Widget Styles ---
+    const widgetBaseStyle = getWidgetBaseStyle();
+    const inputBaseStyle = getInputBaseStyle();
+    const glassmorphedMenuStyle = getGlassmorphedMenuStyle();
+    const glassmorphedButtonStyle = getGlassmorphedButtonStyle();
+    const gradients = getGradients();
+    let gradientIndex = 0;
+
+
+    // --- Font Size Widget ---
+    const fontSizeWidget = createFontSizeWidget(widgetBaseStyle);
+    navWidget.appendChild(fontSizeWidget);
+
+    // --- Search Widget --- 
+    const searchWidget = createSearchWidget(widgetBaseStyle, inputBaseStyle, glassmorphedMenuStyle);
+    navWidget.appendChild(searchWidget);
+
+    // --- Tashkeel Toggle Widget ---
+    const tashkeelWidget = createTashkeelWidget(widgetBaseStyle);
+    navWidget.appendChild(tashkeelWidget);
+
+    // --- Treasure Button Widget ---
+    const treasureWidget = createTreasureWidget(widgetBaseStyle, glassmorphedMenuStyle);
+    navWidget.appendChild(treasureWidget);
+    navWidget.appendChild(createTreasureModal());
+
+    // --- Apply Hover/Touch Effects and Gradients to Buttons ---
+    applyButtonEffects(gradients);
+
+     // --- Set Initial Money Amount Display ---
+    updateMoneyDisplay(200);
+
+}
+
+function createTreasureModal() {
+    const treasureModal = document.createElement('div');
+    treasureModal.id = 'treasureModal';
+
+    const modalContent = document.createElement('div');
+    modalContent.id = 'treasureModalContent';
+    modalContent.dir = 'rtl';
+    modalContent.style.cssText = getTreasureModalContentStyle();
+    modalContent.appendChild(createMoneyRectangle());
+    modalContent.appendChild(createHolographicGlass());
+    createEmojiArtifacts(modalContent);
+    modalContent.appendChild(createMilestoneProgress());
+    modalContent.appendChild(createModalText());
+    modalContent.appendChild(createSupportImages());
+    modalContent.appendChild(createCloseModalButton());
+
+    treasureModal.appendChild(modalContent);
+    return treasureModal;
+}
+
+function createMoneyRectangle() {
+    const moneyRectangle = document.createElement('div');
+    moneyRectangle.id = 'moneyRectangle';
+    moneyRectangle.classList.add('money-rectangle');
+    const moneyDisplay = document.createElement('span');
+    moneyDisplay.id = 'moneyDisplay';
+    moneyRectangle.appendChild(moneyDisplay);
+    return moneyRectangle;
+}
+
+function createHolographicGlass() {
+    const glassContainer = document.createElement('div');
+    glassContainer.classList.add('holographic-glass');
+    glassContainer.style.cssText = `position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: inherit; z-index: -1;`;
+    return glassContainer;
+}
+
+function createEmojiArtifacts(modalContent) {
+    const glassContainer = modalContent.querySelector('.holographic-glass');
+    const artifactEmojis = ['🕋', '🌙', '💰', '❤️', '📖'];
+    for (let i = 0; i < 60; i++) { // Increased to 60 artifacts
+        const artifactEmoji = document.createElement('span');
+        artifactEmoji.textContent = artifactEmojis[i % artifactEmojis.length];
+        artifactEmoji.classList.add('modal-artifact-emoji');
+        artifactEmoji.style.top = `${Math.random() * 300 - 100}%`;
+        artifactEmoji.style.left = `${Math.random() * 300 - 100}%`;
+        artifactEmoji.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
+        glassContainer.appendChild(artifactEmoji);
+    }
+}
+
+function createMilestoneProgress() {
+    let moneyAmount = 200; // Example money amount - make dynamic
+    const milestones = getMilestonesData();
+    const totalTargetMoney = milestones.goals.reduce((sum, goal) => sum + goal.target, 0);
+    const progressPercentage = (moneyAmount / totalTargetMoney) * 100;
+
+    const milestoneProgressContainer = document.createElement('div');
+    milestoneProgressContainer.id = 'milestoneProgressContainer';
+    milestoneProgressContainer.classList.add('milestone-progress-container');
+    milestoneProgressContainer.style.marginBottom = '40px'; // Reduced margin
+
+    const progressBar = document.createElement('div');
+    progressBar.classList.add('milestone-progress-bar');
+    milestoneProgressContainer.appendChild(progressBar);
+
+    const progressBarLine = document.createElement('div');
+    progressBarLine.classList.add('milestone-progress-bar-line');
+    progressBarLine.style.width = `${progressPercentage}%`;
+    progressBar.appendChild(progressBarLine);
+
+    const milestoneMarkersContainer = document.createElement('div');
+    milestoneMarkersContainer.classList.add('milestone-markers-container');
+    milestoneProgressContainer.appendChild(milestoneMarkersContainer);
+
+    milestones.goals.forEach((goal, index) => {
+        const milestoneMarker = createMilestoneMarker(goal, totalTargetMoney);
+        milestoneMarkersContainer.appendChild(milestoneMarker);
+    });
+    updateMoneyDisplay(moneyAmount);
+    return milestoneProgressContainer;
+}
+
+function createMilestoneMarker(goal, totalTargetMoney) {
+    const milestoneMarker = document.createElement('div');
+    milestoneMarker.classList.add('milestone-marker');
+    milestoneMarker.style.marginBottom = '40px';
+    milestoneMarker.style.left = `${(goal.target / totalTargetMoney) * 100}%`;
+
+ 
+
+    const markerImage = document.createElement('img');
+    markerImage.src = goal.image;
+    markerImage.alt = goal.name;
+    markerImage.classList.add('milestone-marker-image');
+    milestoneMarker.appendChild(markerImage);
+
+    const markerName = document.createElement('span');
+    markerName.textContent = goal.name;
+    markerName.classList.add('milestone-marker-name');
+    milestoneMarker.appendChild(markerName);
+    return milestoneMarker;
+}
+
+
+function createModalText() {
+    const modalText = document.createElement('p');
+    modalText.textContent = `كل اللي انت شايفه دا تعب سنين...لو مش قادر تدعم المشروع ماديا ادعمه معنويا بلايك لصفحاتنا علي اليوتيوب, 
+    و اي دعم للمشروع هيبان هنا و هيتصرف فأيه
+
+
+    و صدقني ال 10 جنيه او ال 20 اللي ملهاش لازمه بالنسبالك ممكن تفرق مع العدد
+    و انا مش الاعلان اللي عاوز ياخد فلوسك و يقسمها علي القائمين علي المشروع...فعلا كل جنيه هيتدفع هنا هيروح للشخص الصح
+    `;
+    modalText.classList.add('modal-main-text');
+    modalText.style.fontFamily = 'quran';
+    return modalText;
+}
+
+function createSupportImages() {
+    const supportImagesContainer = document.createElement('div');
+    supportImagesContainer.classList.add('support-images-container');
+
+    const googlePlayLink = createSupportImageLink('https://www.youtube.com/@TUT_OS', 'https://png.pngtree.com/png-vector/20221018/ourmid/pngtree-subscribe-click-the-reminder-icon-png-image_6315982.png', 'Download from Google Play');
+    supportImagesContainer.appendChild(googlePlayLink);
+
+    const coffeeLink = createSupportImageLink('https://www.buymeacoffee.com/halimo.exe', 'https://www.pngall.com/wp-content/uploads/11/Donate-PNG-Clipart.png', 'يلا بينا نساعد');
+    supportImagesContainer.appendChild(coffeeLink);
+
+
+    return supportImagesContainer;
+}
+
+function createSupportImageLink(href, src, alt) {
+    const link = document.createElement('a');
+    link.href = href;
+    link.target = '_blank';
+    const image = document.createElement('img');
+    image.src = src;
+    image.alt = alt;
+    image.classList.add('support-image');
+    link.appendChild(image);
+    return link;
+}
+
+
+function createCloseModalButton() {
+    const closeModalButton = document.createElement('button');
+    closeModalButton.textContent = 'إغلاق';
+    closeModalButton.onclick = toggleTreasureModal;
+    closeModalButton.classList.add('close-modal-button');
+    closeModalButton.style.marginTop = '50px'; // Reduced margin
+    return closeModalButton;
+}
+
+
+function updateMoneyDisplay(amount) {
+    const moneyDisplaySpan = document.getElementById('moneyDisplay');
+    if (moneyDisplaySpan) {
+        moneyDisplaySpan.textContent = `جمعنا: $${amount}`;
+    }
+}
+
+function updateProgressBar(currentMoney, totalMoney) {
+    const progress = (currentMoney / totalMoney) * 100;
+    const progressBarLineEl = document.querySelector('.milestone-progress-bar-line');
+    if (progressBarLineEl) {
+        progressBarLineEl.style.width = `${progress}%`;
+    }
+}
+
+function getMilestonesData() {
+    return {
+        goals: [
+            {
+                name: "تطبيق أندرويد",
+                target: 100,
+                image: "https://consumer.huawei.com/dam/content/dam/huawei-cbg-site/common/mkt/plp/phones-20230509/view-all-phones/all-nova-y61.png",
+            },
+            {
+                name: "ذكاء اصطناعي اسلامي",
+                target: 2500,
+                image: "https://www.pngmart.com/files/21/AI-PNG-HD.png",
+            },
+            {
+                name: "حملات الذكاه",
+                target: 4600,
+                image: "https://png.pngtree.com/png-vector/20230808/ourmid/pngtree-homeless-man-vector-png-image_6981198.png",
+            }
+        ]
+    };
+}
+
+function getGradients() {
+    return [
+        'linear-gradient(135deg, #3498db, #2980b9)',
+        'linear-gradient(135deg, #e74c3c, #c0392b)',
+        'linear-gradient(135deg, #2ecc71, #27ae60)',
+        'linear-gradient(135deg, #f39c12, #e67e22)',
+        'linear-gradient(135deg, #9b59b6, #8e44ad)',
+    ];
+}
+
+function getGlassmorphedButtonStyle() {
+    return `display: flex; align-items: center; padding: 8px 15px; border: none; border-radius: 10px; background-color: rgba(255, 255, 255, 0.05); color: white; cursor: pointer; font-size: 16px; transition: background-color 0.2s ease; gap: 10px; text-align: left; width: 100%;`;
+}
+
+function getGlassmorphedMenuStyle() {
+    return `position: absolute; top: 60px; left: 0; background-color: rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); border-radius: 15px; padding: 10px; display: none; gap: 5px; flex-direction: column; border: 1px solid rgba(255, 255, 255, 0.1); z-index: 1002;`;
+}
+
+function getTreasureModalContentStyle() {
+    return `position: relative; border-radius: 20px; padding-bottom: 60px; /* Even less padding */ color: white; text-align: center; width: 95%; max-width: 700px; display: flex; flex-direction: column; align-items: center;`; // Reduced padding here too
+}
+
+function getInputBaseStyle() {
+    return `padding: 8px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; background-color: rgba(0, 0, 0, 0.5); color: white; text-align: center; font-size: 14px; -webkit-appearance: none; -moz-appearance: textfield; appearance: textfield; transition: border-color 0.3s ease;;`;
+}
+
+function getWidgetBaseStyle() {
+    return `display: flex; justify-content: center; align-items: center; border: none; border-radius: 50%; color: white; cursor: pointer; font-size: 20px; transition: transform 0.2s ease; -webkit-tap-highlight-color: transparent; width: 50px; height: 50px; background-color: rgba(255, 255, 255, 0.1);`;
+}
+
+function createNavWidget() {
+    const navWidget = document.createElement('div');
+    navWidget.id = 'navWidget';
+    navWidget.style.cssText = `display: flex; position: fixed; top: 10px; left: 20px; z-index: 1000; gap: 10px; flex-wrap: wrap;`;
+    return navWidget;
+}
+
+
+
+function createFontSizeWidget(widgetBaseStyle) {
+    const fontWidgetContainer = document.createElement('div');
+    fontWidgetContainer.classList.add('widget-container');
+    fontWidgetContainer.style.display = 'flex';
+    fontWidgetContainer.style.gap = '10px';
+
+    const fontSmallerButton = document.createElement('button');
+    fontSmallerButton.innerHTML = '<span><i class="fas fa-search-minus"></i></span>';
+    fontSmallerButton.onclick = fontSmallerWidget;
+    fontSmallerButton.classList.add('widget-button');
+    fontSmallerButton.style.cssText = widgetBaseStyle;
+    fontWidgetContainer.appendChild(fontSmallerButton);
+
+    const fontSizeDisplay = document.createElement('span');
+    fontSizeDisplay.id = 'spanSizeWidget';
+    fontSizeDisplay.textContent = '18';
+    fontSizeDisplay.style.color = 'white';
+    fontSizeDisplay.style.width = '30px';
+    fontSizeDisplay.style.textAlign = 'center';
+    fontSizeDisplay.style.lineHeight = '50px';
+    fontWidgetContainer.appendChild(fontSizeDisplay);
+
+    const fontBiggerButton = document.createElement('button');
+    fontBiggerButton.innerHTML = '<span><i class="fas fa-search-plus"></i></span>';
+    fontBiggerButton.onclick = fontBiggerWidget;
+    fontBiggerButton.classList.add('widget-button');
+    fontBiggerButton.style.cssText = widgetBaseStyle;
+    fontWidgetContainer.appendChild(fontBiggerButton);
+    return fontWidgetContainer;
+}
+
+function createSearchWidget(widgetBaseStyle, inputBaseStyle, glassmorphedMenuStyle) {
+    const searchWidgetContainer = document.createElement('div');
+    searchWidgetContainer.classList.add('widget-container');
+    searchWidgetContainer.style.display = 'flex';
+    searchWidgetContainer.style.gap = '5px';
+    searchWidgetContainer.style.position = 'relative';
+
+    const searchButton = document.createElement('button');
+    searchButton.innerHTML = '<span><i class="fas fa-search"></i></span>';
+    searchButton.onclick = toggleSearchMenuWidget;
+    searchButton.classList.add('widget-button');
+    searchButton.style.cssText = widgetBaseStyle;
+    searchWidgetContainer.appendChild(searchButton);
+
+    const searchMenu = document.createElement('div');
+    searchMenu.id = 'searchMenuWidget';
+    searchMenu.style.cssText = glassmorphedMenuStyle + `display: none;`;
+    searchWidgetContainer.appendChild(searchMenu);
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.id = 'searchBoxWidget';
+    searchInput.placeholder = 'بحث في القرآن...';
+    searchInput.style.cssText = inputBaseStyle + `width: 200px;`;
+    searchMenu.appendChild(searchInput);
+    return searchWidgetContainer;
+}
+
+function createTashkeelWidget(widgetBaseStyle) {
+    const tashkeelWidgetContainer = document.createElement('div');
+    tashkeelWidgetContainer.classList.add('widget-container');
+    tashkeelWidgetContainer.style.display = 'flex';
+    tashkeelWidgetContainer.style.gap = '10px';
+
+    const tashkeelToggleButton = document.createElement('button');
+    tashkeelToggleButton.innerHTML = '<span><i class="fas fa-font"></i></span>';
+    tashkeelToggleButton.onclick = toggleTashkeelWidget;
+    tashkeelToggleButton.classList.add('widget-button');
+    tashkeelToggleButton.style.cssText = widgetBaseStyle;
+    tashkeelWidgetContainer.appendChild(tashkeelToggleButton);
+    return tashkeelWidgetContainer;
+}
+
+function createTreasureWidget(widgetBaseStyle, glassmorphedMenuStyle) {
+    const treasureWidgetContainer = document.createElement('div');
+    treasureWidgetContainer.classList.add('widget-container');
+    treasureWidgetContainer.style.display = 'flex';
+    treasureWidgetContainer.style.gap = '5px';
+    treasureWidgetContainer.style.position = 'relative';
+
+    const treasureButton = document.createElement('button');
+    treasureButton.classList.add('widget-button', 'treasure-button');
+    treasureButton.style.cssText = widgetBaseStyle + `background-image: linear-gradient(45deg, #FFA500, #FF8C00); background-size: 200% 200%; animation: gradientShift 3s linear infinite;`;
+    treasureButton.title = "نحن بحاجة إلى المال لمواصلة التطوير";
+    treasureButton.innerHTML = `
+        <svg class="treasure-icon" viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: white;">
+            <path d="M20 7V5C20 3.9 19.1 3 18 3H6C4.9 3 4 3.9 4 5V7H2V21C2 22.1 2.9 23 4 23H20C21.1 23 22 22.1 22 21V7H20ZM6 5H18V7H6V5ZM20 21H4V7H20V21ZM12 15C10.3 15 9 13.7 9 12C9 10.3 10.3 9 12 9C13.7 9 15 10.3 15 12C15 13.7 13.7 15 12 15Z"/>
+        </svg>`;
+    treasureButton.addEventListener('click', toggleTreasureModal);
+    treasureWidgetContainer.appendChild(treasureButton);
+    return treasureWidgetContainer;
+}
+
+
+function applyButtonEffects(gradients) {
+    document.querySelectorAll('.widget-button').forEach((button, index) => {
+        const gradient = gradients[index % gradients.length];
+
+        button.addEventListener('mouseover', () => {
+            if (!button.classList.contains('treasure-button')) {
+                button.style.background = gradient;
+            }
+            button.style.transform = 'scale(1.1)';
+        });
+        button.addEventListener('mouseout', () => {
+            if (!button.classList.contains('treasure-button')) {
+                button.style.background = 'rgba(255, 255, 255, 0.1)';
+            }
+            button.style.transform = 'scale(1)';
+        });
+
+        button.addEventListener('touchstart', () => {
+            if (!button.classList.contains('treasure-button')) {
+                button.style.background = gradient;
+            }
+            button.style.transform = 'scale(1.1)';
+        });
+        button.addEventListener('touchend', () => {
+            if (!button.classList.contains('treasure-button')) {
+                button.style.background = gradient;
+            }
+            button.style.transform = 'scale(1)';
+        });
+        button.addEventListener('touchcancel', () => {
+            if (!button.classList.contains('treasure-button')) {
+                button.style.background = gradient;
+            }
+            button.style.transform = 'scale(1)';
+        });
+    });
+}
+
+
+function toggleTreasureModal() {
+    const treasureModal = document.getElementById('treasureModal');
+    if (!treasureModal) {
+        console.error("treasureModal element not found!");
+        return;
+    }
+    treasureModal.style.display = treasureModal.style.display === 'none' ? 'flex' : 'none';
+}
+
+function toggleSearchMenuWidget() {
+    const searchMenu = document.getElementById('searchMenuWidget');
+    if (searchMenu.style.display === 'none') {
+        searchMenu.style.display = 'flex';
+        document.getElementById('searchBoxWidget').focus();
+    } else {
+        searchMenu.style.display = 'none';
+    }
+}
+function hideSearchMenuWidget() {
+    const searchMenu = document.getElementById('searchMenuWidget');
+    searchMenu.style.display = 'none';
+}
+
+
+
+function handleSoraInputWidget() {
+    scrollToSoraWidget();
+}
+
+function handleSearchEnterWidget(event) {
+    if (event.key === "Enter") {
+        btnSearchBoxFuncWidget();
+        hideSearchMenuWidget();
+    }
+}
+
+
+
+function gotoElementWidget(element) {
+    if (!element) return;
+    var rect = element.getBoundingClientRect();
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    var offset = rect.top + scrollTop;
+    window.scrollTo({ top: offset, behavior: "smooth" });
+}
+
+function fontBiggerWidget() {
+    let fs = changeFontSizeWidget(".aya", 1);
+    document.getElementById("spanSizeWidget").textContent = fs;
+}
+
+function fontSmallerWidget() {
+    let fs = changeFontSizeWidget(".aya", -1);
+    document.getElementById("spanSizeWidget").textContent = fs;
+}
+
+function changeFontSizeWidget(selector, increment) {
+    const elements = changeFontSizeWidgetBase(selector, increment);
+    document.getElementById("spanSizeWidget").textContent = elements;
+    return elements;
+}
+
+function changeFontSizeWidgetBase(selector, increment) {
+    const elements = document.querySelectorAll(selector);
+    const currentFontSize = window.getComputedStyle(elements[0]).fontSize;
+    let newFontSize = parseInt(currentFontSize) + increment;
+    if (newFontSize < 10) newFontSize = 10;
+    if (newFontSize > 30) newFontSize = 30;
+    elements.forEach(element => {
+        element.style.fontSize = `${newFontSize}px`;
+    });
+    return newFontSize;
+}
+
+
+function btnSearchBoxFuncWidget(searchQuery) {
+    if (!searchQuery) return;
+
+    // Ensure modal structure exists and inject CSS if needed
+    let searchResultsModal = document.getElementById("searchResultsModal");
+    let searchResultsModalContent;
+
+    if (!searchResultsModal) {
+        searchResultsModal = document.createElement('div');
+        searchResultsModal.id = 'searchResultsModal';
+        searchResultsModal.style.display = 'none'; // Initially hidden
+        searchResultsModal.style.position = 'fixed'; // Stay in place
+        searchResultsModal.style.zIndex = '1'; // Sit on top
+        searchResultsModal.style.left = '0';
+        searchResultsModal.style.top = '0';
+        searchResultsModal.style.width = '100%'; // Full width
+        searchResultsModal.style.height = '100%'; // Full height
+        searchResultsModal.style.overflow = 'auto'; // Enable scroll if needed
+        searchResultsModal.style.backgroundColor = 'rgba(0,0,0,0.4)'; // Black w/ opacity
+        searchResultsModal.style.fontFamily = 'sans-serif'; // Default font
+
+        searchResultsModalContent = document.createElement('div');
+        searchResultsModalContent.id = 'searchResultsModalContent';
+        searchResultsModalContent.style.backgroundColor = '#fefefe';
+        searchResultsModalContent.style.margin = '15% auto'; /* 15% from the top and centered */
+        searchResultsModalContent.style.padding = '20px';
+        searchResultsModalContent.style.border = '1px solid #888';
+        searchResultsModalContent.style.width = '80%'; /* Could be more or less, depending on screen size */
+
+        searchResultsModal.appendChild(searchResultsModalContent);
+        document.body.appendChild(searchResultsModal);
+
+        // Close button for modal
+        let closeButton = document.createElement('span');
+        closeButton.innerHTML = '×';
+        closeButton.style.color = '#aaa';
+        closeButton.style.float = 'right';
+        closeButton.style.fontSize = '28px';
+        closeButton.style.fontWeight = 'bold';
+        closeButton.style.cursor = 'pointer';
+        closeButton.onclick = function() {
+            searchResultsModal.style.display = "none";
+        }
+        searchResultsModalContent.appendChild(closeButton);
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == searchResultsModal) {
+                searchResultsModal.style.display = "none";
+            }
+        }
+
+
+    } else {
+        searchResultsModalContent = document.getElementById("searchResultsModalContent");
+        if (!searchResultsModalContent) {
+            searchResultsModalContent = document.createElement('div');
+            searchResultsModalContent.id = 'searchResultsModalContent';
+            searchResultsModal.appendChild(searchResultsModalContent);
+        } else {
+            searchResultsModalContent.innerHTML = ''; // Clear previous content
+            // Ensure close button is there if modal was already existing but content was cleared.
+            if (!searchResultsModalContent.querySelector('span')) {
+                let closeButton = document.createElement('span');
+                closeButton.innerHTML = '×';
+                closeButton.style.color = '#aaa';
+                closeButton.style.float = 'right';
+                closeButton.style.fontSize = '28px';
+                closeButton.style.fontWeight = 'bold';
+                closeButton.style.cursor = 'pointer';
+                closeButton.onclick = function() {
+                    searchResultsModal.style.display = "none";
+                }
+                searchResultsModalContent.appendChild(closeButton);
+            }
+        }
+    }
+
+
+    searchResultsModalContent.innerHTML = '<span style="color: #aaa; float:right; font-size: 28px; font-weight:bold; cursor: pointer;" onclick="document.getElementById(\'searchResultsModal\').style.display=\'none\';">×</span>'; // Ensure close button is present on modal reset
+    searchResultsModalContent.innerHTML = ''; // Clear content before adding new results.
+
+
+    let query = removeTashkeel(searchQuery.trim());
+    query = query.replace(/يوم تري/g, 'يوم ترى');
+    query = query.replace(/فاداراتم/g, 'فاداراءتم');
+    query = query.replace(/رحمن/g, 'رحمان');
+    query = query.replace(/يسالونك/g, 'يسلونك');
+    query = query.replace(/يسئلونك/g, 'يسلونك');
+    query = query.replace(/اسرائ/g, 'اسراء');
+    query = query.replace(/ااعجمي/g, 'اعجمي');
+    query = query.replace(/اا/g, 'ءا');
+    query = query.replace(/النبيين/g, 'النبين');
+    query = query.replace(/يا /g, 'يا');
+    query = query.replace(/هذة/g, 'هذه');
+    query = query.replace(/هاؤلاء/g, 'هؤلاء');
+    query = query.replace(/موسي/g, "موسى");
+    query = query.replace(/عيسي/g, "عيسى");
+    query = query.replace(/الزكواة/g, "الزكاة").replace(/الزكوة/g, "الزكاة");
+    query = query.replace(/الصلواة/g, "الصلاة").replace(/الصلوة/g, "الصلاة");
+
+    let ayat = document.querySelectorAll(".aya");
+    if (!ayat.length) {
+        searchResultsModalContent.textContent = "لا يوجد عناصر 'aya' في الصفحة.";
+        searchResultsModal.style.display = 'block'; // Show modal even if no 'aya' elements
+        return;
+    }
+
+
+    document.querySelectorAll(".aya .highlight").forEach(highlightSpan => {
+        const parentAya = highlightSpan.closest('.aya');
+        if(parentAya) { // Check if parentAya exists before accessing dataset.originalHtml
+            parentAya.innerHTML = parentAya.dataset.originalHtml;
+        }
+    });
+
+    let resultsFound = false;
+
+    ayat.forEach((ayaSpan, index) => {
+        const soraCard = ayaSpan.closest('.sora-card');
+        let originalHTML = ayaSpan.dataset.originalHtml; // Get text from data-original-html
+        let plainText = removeTashkeel(originalHTML);
+        plainText = plainText.replace(/\n/g, ' ');
+        plainText = plainText.replace(/\s+/g, ' ');
+
+        if (plainText.includes(query)) {
+            resultsFound = true;
+
+            // Clone the aya element BEFORE highlighting
+            let clonedAya = ayaSpan.cloneNode(true);
+
+            let highlightedHTML = originalHTML.replace(new RegExp(query, 'gi'), match => {
+                return `<span class="highlight">${match}</span>`;
+            });
+            ayaSpan.innerHTML = highlightedHTML; // Highlight in the original ayaSpan
+
+
+            // remove highlight from the cloned element as we only want to highlight in original place
+            clonedAya.querySelectorAll(".highlight").forEach(highlight => {
+                highlight.outerHTML = highlight.innerHTML; // remove span and keep text
+            });
+            clonedAya.style.fontFamily = 'Quran'; // Ensure cloned aya has Quran font
+
+
+            searchResultsModalContent.appendChild(clonedAya);
+
+
+        }
+    });
+
+    if (!resultsFound) {
+        searchResultsModalContent.textContent = "مش لاقي اللي بتدور عليه";
+    }
+
+    searchResultsModal.style.display = 'block'; // Show the modal after processing results
+}
+
+
+function removeTashkeel(text) {
+    return text.replace(/تَاْيۡـَٔسُواْ/g, "تَيۡـَٔسُواْ").replace(/يَعۡفُوَاْ/g, "يَعۡفُوَ").replace(/ثَمُودَاْ/g, "ثَمُودَ").replace(/يَاْيۡـَٔسُ/g, "يَيۡـَٔسُ").replace(/لِّتَتۡلُوَاْ/g, "لِّتَتۡلُوَ").replace(/يَاْيۡـَٔسِ/g, "يَيۡـَٔسِ").replace(/نَّدۡعُوَاْ/g, "نَّدۡعُوَ").replace(/لِشَاْيۡءٍ/g, "لِشَيۡءٍ").replace(/وَثَمُودَاْ/g, "وَثَمُودَ").replace(/لَأَاْذۡبَحَنَّهُۥٓ/g, "لَأَذۡبَحَنَّهُۥٓ").replace(/أَتۡلُوَاْ/g, "أَتۡلُوَ").replace(/وَثَمُودَاْ/g, "وَثَمُودَ").replace(/لِّيَرۡبُوَاْ/g, "لِّيَرۡبُوَ").replace(/لِّيَبۡلُوَاْ/g, "لِّيَبۡلُوَ").replace(/وَنَبۡلُوَاْ/g, "وَنَبۡلُوَ").replace(/وَثَمُودَاْ/g, "وَثَمُودَ").replace(/مِاْئَةٖ/g, "مِئَةٖ").replace(/مِاْئَةَ/g, "مِئَةَ").replace(/مِاْئَةِ/g, "مِئَةِ").replace(/مِّاْئَةٞ/g, "مِّئَةٞ").replace(/مِاْئَةَ/g, "مِئَةَ").replace(/مِاْئَتَيۡنِۚ/g, "مِئَتَيۡنِۚ").replace(/مِاْئَتَيۡنِۚ/g, "مِئَتَيۡنِۚ").replace(/وَجِاْيٓءَ/g, "وَجِيٓءَ").replace(/لِيَسُـُٔواْ/g, "ليسوءوا").replace(/ا۠/g, "").replace(/ۖ/g, "").replace(/ۚ/g, "").replace(/ٓ/g, "").replace(/يْ/g, "").replace(/ىٰ(?=\s|$)/g, "ى").replace(/ىٰ/g, "ا").replace(/وٰ/g, "ا").replace(/ۦٓ/g, "ي").replace(/ۦَ/g, "ي").replace(/ٰ/g, "ا").replace(/[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u0640]/g, "").replace(/ءا/g, 'ا').replace(/ٱ/g, "ا").replace(/آ/g, "ا").replace(/أ/g, "ا").replace(/إ/g, "ا").replace(/ابراهم/g, "ابراهيم").replace(/الصلواة/g, "الصلاة").replace(/الزكواة/g, "الزكاة").replace(/ذالك/g, "ذلك").replace(/هاذا/g, "هذا").replace(/هاذه/g, "هذه").replace(/علا\s/g, "علي ").replace(/هاؤلاء/g, "هؤلاء");
+}
+
+function removeTashkeelWithoutChangeChar(text) {
+    return text.replace(/[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u0640]/g, "");
+}
+
+function toggleTashkeelWidget(event) {
+    const tashkeelButton = event.target.closest('button');
+    const ayaElements = document.querySelectorAll(".aya");
+
+    if (tashkeelButton.classList.contains('active')) {
+        ayaElements.forEach(el => {
+            el.innerHTML = el.dataset.originalHtml;
+        });
+        tashkeelButton.classList.remove('active');
+    } else {
+        ayaElements.forEach(el => {
+            el.innerHTML = removeTashkeelWithoutChangeChar(el.dataset.originalHtml);
+        });
+        tashkeelButton.classList.add('active');
+    }
+}
+
+function setSearchBoxValueWidget(char) {
+    const searchBox = document.getElementById("searchBoxWidget");
+    if (!searchBox) return;
+    searchBox.value = searchBox.value === char ? "" : char;
+    btnSearchBoxFuncWidget();
+}
+
+function toggleSearchMenuWidget() {
+    const searchMenu = document.getElementById('searchMenuWidget');
+    if (searchMenu.style.display === 'none') {
+        searchMenu.style.display = 'flex';
+        document.getElementById('searchBoxWidget').focus();
+    } else {
+        searchMenu.style.display = 'none';
+    }
+}
+function hideSearchMenuWidget() {
+    const searchMenu = document.getElementById('searchMenuWidget');
+    searchMenu.style.display = 'none';
+}
+
+// Initialize widgets when script loads
+createWidgets();
+//tooltip============================================================
+
+
+function updateScore(newScore) {
+    // --- updateScore Function ---
+    // This is a placeholder function.
+    // In a real application, this function would:
+    // 1. Update the hasanatScore in your application's state (if you have one).
+    // 2. Persist the hasanatScore to localStorage or a database.
+    // 3. Optionally update the UI to display the new score.
+
+    localStorage.setItem('hasanatScore', newScore); // Persist to localStorage
+    console.log('Score updated to:', newScore); // For debugging, you can remove this later
+    // --- /updateScore Function ---
+}
+
+
+function showTooltip(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const ayaSpan = this; // 'this' will be the clicked .aya element
+    const soraId = ayaSpan.id.match(/s(\d+)a/)[1];
+    const ayaId = parseInt(ayaSpan.id.match(/a(\d+)/)[1], 10); // Parse ayaId as integer
+
+    // --- Aya Marker Logic Integration START ---
+    // 1. Remove yellow gradient from any previously marked .aya elements
+    document.querySelectorAll('.aya.aya-marked').forEach(aya => {
+        aya.classList.remove('aya-marked');
+    });
+
+    // 2. Add yellow gradient to the currently clicked .aya element
+    ayaSpan.classList.add('aya-marked');
+
+    // 3. Cache the ID of the clicked .aya element in localStorage
+    localStorage.setItem('lastClickedAyaId', ayaSpan.id);
+    // --- Aya Marker Logic Integration END ---
+
+    // --- Hasanat Calculation and Display Logic START ---
+    let hasanatEarned = 0;
+    let hasanatScore = parseInt(localStorage.getItem('hasanatScore') || '0'); // Get cached hasanatScore, default to 0 if not set
+    let updatedHasnatScore = hasanatScore;
+
+    const soraLastAyaCacheKey = `lastAya_sora_${soraId}`;
+    let lastAyaInSora = parseInt(localStorage.getItem(soraLastAyaCacheKey) || '0', 10); // Get last clicked aya for this sora
+
+    let currentSoraHasanat = ayaId;        // Hasanat earned up to the currently clicked aya
+
+    console.log("--- Hasanat Calculation START ---");
+    console.log("Current Sora ID:", soraId);
+    console.log("Current Aya ID:", ayaId);
+    console.log("Current hasanatScore (from cache):", hasanatScore);
+    console.log("Last Aya in Sora (from cache):", lastAyaInSora);
+
+
+    if (lastAyaInSora === 0) {
+        // First click in this sora
+        hasanatEarned = currentSoraHasanat;
+        console.log("First click in sora detected.");
+    } else if (currentSoraHasanat > lastAyaInSora) {
+        // Moving forward in sora
+        hasanatEarned = currentSoraHasanat - lastAyaInSora;
+        console.log("Moving forward in sora detected.");
+    } else if (currentSoraHasanat < lastAyaInSora) {
+        // Moving backward in sora
+        hasanatEarned = currentSoraHasanat - lastAyaInSora; // This will be a negative value
+        console.log("Moving backward in sora detected.");
+    } else {
+        // Staying on the same aya, no hasanat change
+        hasanatEarned = 0;
+        console.log("Staying on the same aya detected.");
+    }
+
+
+    console.log("Calculated hasanatEarned:", hasanatEarned);
+
+    updatedHasnatScore += hasanatEarned;
+
+    // Ensure hasanatScore doesn't go below zero (optional, but good practice)
+    updatedHasnatScore = Math.max(0, updatedHasnatScore);
+
+    console.log("Updated hasnatScore:", updatedHasnatScore);
+
+
+    // --- CALL THE FUNCTIONS HERE ---
+    updateScore(updatedHasnatScore); // Apply the updated score to the function
+    // --- FUNCTIONS CALLED ---
+
+
+    // Update last clicked aya for this sora in cache
+    localStorage.setItem(soraLastAyaCacheKey, currentSoraHasanat);
+    console.log("Last Aya in Sora updated in cache to:", currentSoraHasanat);
+    console.log("--- Hasanat Calculation END ---");
+
+
+    // --- Display Hasanat Popup ---
+    const hasanatPopup = document.createElement('span');
+    hasanatPopup.className = 'hasanat-popup';
+    hasanatPopup.textContent = `${hasanatEarned > 0 ? '+ ' : ''}${hasanatEarned} حسنه`; // Show positive or negative change
+
+    ayaSpan.style.position = 'relative'; // Ensure relative positioning for absolute popup
+    ayaSpan.appendChild(hasanatPopup);
+
+    // Fade out and remove popup after a delay
+    setTimeout(() => {
+        hasanatPopup.classList.add('fade-out');
+        setTimeout(() => {
+            if (hasanatPopup.parentNode) { // Check if still attached before removal
+                hasanatPopup.parentNode.removeChild(hasanatPopup);
+                ayaSpan.style.position = ''; // Reset position style
+            }
+        }, 1000); // Wait for fade-out animation to complete (1s)
+    }, 1500); // Display popup for 1.5 seconds
+
+
+    // --- Character Calculation Logic END ---
+
+
+    // Create the icon container (tooltip) - Rest of the tooltip code remains the same...
+    let tooltip = document.getElementById("tooltip");
+    if (!tooltip) {
+        tooltip = document.createElement("div");
+        tooltip.id = "tooltip";
+        tooltip.className = "tooltip"; // Add the CSS class
+        document.body.appendChild(tooltip);
+
+        // Add a close button
+        const closeButton = document.createElement("span");
+        closeButton.className = "tooltip-close";
+        closeButton.innerHTML = "×";
+        closeButton.onclick = hideTooltip;
+        tooltip.appendChild(closeButton);
+
+    } else {
+        // Clear previous content and add close button
+        tooltip.innerHTML = "";
+        const closeButton = document.createElement("span");
+        closeButton.className = "tooltip-close";
+        closeButton.innerHTML = "×";
+        closeButton.onclick = hideTooltip;
+        tooltip.appendChild(closeButton);
+    }
+
+    // --- Create Icons ---
+    const iconContainer = document.createElement("div");
+    iconContainer.className = "icon-container";
+
+    // 1. Audio Icon
+    const audioIcon = createIcon("👂🏽", "اسمع الايه دي بس", (e) => {
+        e.stopPropagation();
+        playAudio(soraId, ayaId);
+        hideTooltip();
+    });
+    iconContainer.appendChild(audioIcon);
+
+    const listenIcon = createIcon("🔉", "اسمع بقية السوره", (e) => {
+        e.stopPropagation();
+        playAudio(soraId, ayaId,true);
+        hideTooltip();
+    });
+    iconContainer.appendChild(listenIcon);
+
+    // 2. Book (Tafsir) Icon
+    const tafsirIcon = createIcon("📖", "اعرض التفسير بالتفصيل", (e) => {
+        e.stopPropagation();
+        showTafsir(soraId, ayaId, event.clientX, event.clientY);
+        // Don't hide here; the iframe should stay open until clicked elsewhere
+    });
+    iconContainer.appendChild(tafsirIcon);
+
+
+    const GPTicon = createIcon("🧔🏽‍♂️", "اسال الشيخ الشعراوي", (e) => {
+        e.stopPropagation();
+        toy({
+            id: "sheikh",
+            systemPrompt: `you will speak arabic, very simple so everyone understands, you are the sheikh sharawi whom will explain the provided quran verse
+             but in very simple short way, from authentic islamic sources only, and never put the introductions or endings just get into the topic`,
+            userPrompt: `eli5 easy tafsir to this quran verse "${ayaSpan.textContent}" only`
+            // image parameter is omitted, it will use the default image URL
+        });
+        hideTooltip();
+    });
+    iconContainer.appendChild(GPTicon);
+
+
+    // 3. Copy Icon
+    const copyIcon = createIcon("📋", "Copy Text", (e) => {
+        e.stopPropagation();
+        copyText(ayaSpan);
+        hideTooltip();
+    });
+    iconContainer.appendChild(copyIcon);
+
+
+    tooltip.appendChild(iconContainer);
+
+    // --- Position the Icon Container ---
+    // Check if it's a touch event
+    if (event.type.startsWith('touch')) {
+        // For touch events, use clientX and clientY from the first touch point
+        tooltip.style.left = `${event.touches[0].clientX}px`;
+        tooltip.style.top = `${event.touches[0].clientY}px`;
+    } else {
+        // For mouse events, use clientX and clientY directly
+        tooltip.style.left = `${event.clientX}px`;
+        tooltip.style.top = `${event.clientY}px`;
+    }
+    tooltip.classList.add("active");
+
+}
+
+
+function loadCachedAya() {
+    const lastClickedAyaId = localStorage.getItem('lastClickedAyaId');
+
+    if (lastClickedAyaId) {
+        const cachedAya = document.getElementById(lastClickedAyaId);
+        if (cachedAya && cachedAya.classList.contains('aya')) { // Ensure it's still an .aya element
+            cachedAya.classList.add('aya-marked');
+        }
+    }
+}
+
+
+// ---  Make sure to attach the event listener correctly ---
+document.addEventListener('DOMContentLoaded', () => {
+    const ayaElements = document.querySelectorAll('.aya');
+    ayaElements.forEach(aya => {
+        aya.addEventListener('click', showTooltip); // Use showTooltip now
+    });
+
+    // Load the cached .aya on page load
+    loadCachedAya();
+});
+
+
+function hideTooltip() {
+    const tooltip = document.getElementById("tooltip");
+    if (tooltip) {
+        tooltip.classList.remove("active");
+    }
+}
+
+
+
+function createIcon(emoji, title, onClickHandler) {
+    const icon = document.createElement("span");
+    icon.className = "tooltip-icon";
+    icon.textContent = emoji;
+    icon.title = title;
+    icon.onclick = onClickHandler;
+    return icon;
+}
+
+function playAudio(soraId, ayaId, playSora = false) {
+    // ... (Audio playback logic - same as before or your implementation) ...
+    console.log(`Play audio for sora ${soraId}, aya ${ayaId} ${playSora ? 'and rest of sora' : 'only'}`);
+}
+
+function showTafsir(soraId, ayaId, x, y) {
+    // ... (Tafsir display logic - same as before or your implementation) ...
+    console.log(`Show tafsir for sora ${soraId}, aya ${ayaId} at x:${x}, y:${y}`);
+}
+
+function copyText(ayaSpan) {
+    const textToCopy = ayaSpan.textContent;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // Optional: Provide user feedback that text is copied
+        console.log('Text copied to clipboard');
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}
+
+function toy(options) {
+    // ... (toy function - same as before or your AI interaction logic) ...
+    console.log('Toy function called with options:', options);
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const ayaElements = document.querySelectorAll('.aya');
+    ayaElements.forEach(aya => {
+        aya.addEventListener('click', showTooltip);
+    });
+    loadCachedAya();
+});
+// Helper function to create icons
+function createIcon(iconChar, title, clickHandler) {
+const icon = document.createElement("span");
+icon.className = "tooltip-icon";
+icon.innerHTML = iconChar;
+icon.title = title;
+icon.onclick = clickHandler;
+
+// Add a nice hover effect
+icon.addEventListener('mouseenter', () => {
+    icon.style.transform = 'scale(1.1)'; // Slightly enlarge
+    icon.style.transition = 'transform 0.2s ease-in-out'; // Smooth transition
+});
+icon.addEventListener('mouseleave', () => {
+    icon.style.transform = 'scale(1)'; // Back to normal size
+});
+
+return icon;
+
+
+}
+
+function showTafsir(soraId, ayaId, mouseX, mouseY) {
+const tafsirUrl = `https://altafsir.com/Tafasir.asp?tMadhNo=0&tTafsirNo=73&tSoraNo=${soraId}&tAyahNo=${ayaId}&tDisplay=yes&UserProfile=0&LanguageId=1`;
+
+let tafsirIframe = document.getElementById("tafsirIframe");
+if (!tafsirIframe) {
+    tafsirIframe = document.createElement("iframe");
+    tafsirIframe.id = "tafsirIframe";
+    tafsirIframe.className = "tafsir-iframe";
+    document.body.appendChild(tafsirIframe);
+}
+
+tafsirIframe.src = tafsirUrl;
+ // Adjust position to avoid being cut off at the edge of the window
+const iframeWidth = 500;  // Match the CSS width
+const iframeHeight = 300; // Match the CSS height
+const posX = (mouseX + iframeWidth > window.innerWidth) ? window.innerWidth - iframeWidth - 20 : mouseX; // 20px margin
+const posY = (mouseY + iframeHeight > window.innerHeight) ? window.innerHeight - iframeHeight - 20 : mouseY;
+
+tafsirIframe.style.left = `${posX}px`;
+tafsirIframe.style.top = `${posY}px`;
+tafsirIframe.style.display = "block";
+
+
+}
+
+function copyText(ayaSpan) {
+if (navigator.clipboard) {
+navigator.clipboard.writeText(ayaSpan.textContent)
+.then(() => {
+console.log("Text copied to clipboard!");
+showToast("Text copied to clipboard!");
+})
+.catch(err => {
+console.error("Failed to copy: ", err);
+fallbackCopyText(ayaSpan);
+});
+} else {
+fallbackCopyText(ayaSpan);
+}
+}
+
+function fallbackCopyText(ayaSpan) {
+const textArea = document.createElement("textarea");
+textArea.value = ayaSpan.textContent;
+document.body.appendChild(textArea);
+textArea.focus();
+textArea.select();
+
+try {
+    const successful = document.execCommand('copy');
+    const msg = successful ? 'successful' : 'unsuccessful';
+    console.log('Fallback: Copying text command was ' + msg);
+    showToast("Text copied to clipboard!");
+} catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+}
+
+document.body.removeChild(textArea);
+
+
+}
+
+function hideTooltip() {
+const tooltip = document.getElementById("tooltip");
+if (tooltip) {
+tooltip.classList.remove("active");
+}
+const tafsirIframe = document.getElementById("tafsirIframe");
+if (tafsirIframe) {
+    tafsirIframe.style.display = "none";
+    tafsirIframe.src = "";
+}
+}
+
+function formatToThreeDigits(number) {
+    return String(number).padStart(3, '000');
+}
+
+let isAutoPlayEnabled = false;
+let isAutoPlayPaused = false;
+let currentSoraId = null;
+let currentAyaId = null;
+let autoplayButton = null; // Declare button outside for conditional creation
+let currentlyPlayingAyahElement = null; // To keep track of the highlighted ayah
+
+function createAutoplayButton() {
+    if (!autoplayButton) { // Only create if it doesn't exist
+        autoplayButton = document.createElement('button');
+        autoplayButton.id = "autoplayButton";
+        autoplayButton.style.position = "fixed";
+        autoplayButton.style.top = "10px";
+        autoplayButton.style.left = "10px";
+        autoplayButton.style.zIndex = "1000";
+        autoplayButton.style.display = "none"; // Initially hidden, shown when autoplay starts
+        autoplayButton.textContent = "Pause Autoplay"; // Initial text
+        document.body.appendChild(autoplayButton);
+
+        autoplayButton.addEventListener('click', () => {
+            if (isAutoPlayEnabled) {
+                isAutoPlayPaused = !isAutoPlayPaused;
+                const audioElement = document.getElementById("audioPlayer");
+
+                if (isAutoPlayPaused) {
+                    audioElement.pause();
+                    autoplayButton.textContent = "Resume Autoplay";
+                    audioElement.onended = null; // Disable autoplay when paused
+                    console.log("Autoplay Paused.");
+                } else {
+                    audioElement.play();
+                    autoplayButton.textContent = "Pause Autoplay";
+                    setupAutoPlayOnEnded(audioElement, currentSoraId, currentAyaId); // Re-enable autoplay
+                    console.log("Autoplay Resumed.");
+                }
+            }
+        });
+    }
+}
+
+
+function playAudio(soraId, ayaId, autoPlay = false) {
+    console.log(`Playing audio for Sora ${soraId}, Aya ${ayaId}, AutoPlay: ${autoPlay}`);
+
+    currentSoraId = soraId;
+    currentAyaId = ayaId;
+
+    const sora3Id = formatToThreeDigits(soraId);
+    const aya3Id = formatToThreeDigits(ayaId);
+
+    const audioUrl = `https://everyayah.com/data/${selectedReciter}/${sora3Id}${aya3Id}.mp3`;
+
+    let audioElement = document.getElementById("audioPlayer");
+    if (!audioElement) {
+        audioElement = document.createElement("audio");
+        audioElement.id = "audioPlayer";
+        audioElement.style.display = 'none'; // Hide the audio player
+        document.body.appendChild(audioElement);
+    }
+    audioElement.src = audioUrl;
+
+    isAutoPlayEnabled = autoPlay;
+    isAutoPlayPaused = false; // Reset paused state when starting new play
+
+    if (isAutoPlayEnabled) {
+        createAutoplayButton(); // Create button if it doesn't exist
+        autoplayButton.style.display = "block"; // Show button when autoplay is on
+        autoplayButton.textContent = "Pause Autoplay"; // Ensure correct text when autoplay starts
+    } else {
+        if (autoplayButton) {
+            autoplayButton.style.display = "none"; // Hide button when autoplay is off
+        }
+        audioElement.onended = null; // Ensure no autoplay if not enabled
+    }
+
+    // Remove highlight from any previously playing ayah
+    removeHighlightFromAyah();
+
+    // Highlight the current ayah and scroll to it
+    highlightAyah(soraId, ayaId);
+
+
+    try {
+        audioElement.play()
+            .then(() => {
+                console.log("Audio playback started successfully.");
+                if (isAutoPlayEnabled && !isAutoPlayPaused) {
+                    setupAutoPlayOnEnded(audioElement, soraId, ayaId);
+                } else {
+                    audioElement.onended = () => { // For single play, remove highlight when audio ends
+                        removeHighlightFromAyah();
+                    };
+                }
+            })
+            .catch(error => {
+                handleAudioPlaybackError(error, autoPlay, audioElement);
+                removeHighlightFromAyah(); // Ensure highlight is removed on error
+            });
+    } catch (error) {
+        handleUnexpectedError(error, autoPlay, audioElement);
+        removeHighlightFromAyah(); // Ensure highlight is removed on unexpected error
+    }
+}
+
+function highlightAyah(soraId, ayaId) {
+    const ayahElement = document.getElementById(`s${soraId}a${ayaId}`);
+    if (ayahElement) {
+        ayahElement.classList.add('playing-ayah');
+        currentlyPlayingAyahElement = ayahElement; // Store the currently highlighted element
+        ayahElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function removeHighlightFromAyah() {
+    if (currentlyPlayingAyahElement) {
+        currentlyPlayingAyahElement.classList.remove('playing-ayah');
+        currentlyPlayingAyahElement = null; // Clear the stored element
+    }
+}
+
+
+function setupAutoPlayOnEnded(audioElement, soraId, ayaId) {
+    audioElement.onended = () => {
+        removeHighlightFromAyah(); // Remove highlight when current audio ends
+        if (!isAutoPlayPaused) {
+            let nextAyaId = parseInt(ayaId) + 1;
+            console.log(`Audio ended, preparing to play next aya: ${nextAyaId}`);
+            playAudio(soraId, nextAyaId, true);
+        } else {
+            console.log("Autoplay is paused, not playing next aya.");
+        }
+    };
+}
+
+
+function handleAudioPlaybackError(error, autoPlay, audioElement) {
+    console.error("Audio playback failed:", error);
+    if (error.name === "NotAllowedError") {
+        showToast("Audio playback was blocked. You may need to interact with the page first.");
+    } else if (error.name === "NotFoundError") {
+        showToast("Audio file not found. No more ayat to play or check Sora and Aya IDs.");
+        stopAutoPlayOnError(autoPlay, audioElement, "NotFoundError");
+    } else if (error.name === "NetworkError") {
+        showToast("Network error. Please check your internet connection.");
+        stopAutoPlayOnError(autoPlay, audioElement, "NetworkError");
+    } else {
+        showToast("Audio playback failed. Check the console for details.");
+        stopAutoPlayOnError(autoPlay, audioElement, "Generic Error");
+    }
+}
+
+
+function handleUnexpectedError(error, autoPlay, audioElement) {
+    console.error("An unexpected error occurred:", error);
+    showToast("فيه مشكله تقريبا...كلم تتوس و قوله عليها علشان يحلها");
+    stopAutoPlayOnError(autoPlay, audioElement, "Unexpected Error");
+}
+
+
+function stopAutoPlayOnError(autoPlay, audioElement, errorType) {
+    if (autoPlay) {
+        audioElement.onended = null;
+        isAutoPlayEnabled = false;
+        if (autoplayButton) {
+            autoplayButton.style.display = "none"; // Hide button on error stop
+        }
+        console.log(`Auto play stopped due to '${errorType}'.`);
+        removeAutoplayButton(); // Remove button from DOM when autoplay stops
+    }
+}
+
+function removeAutoplayButton() {
+    if (autoplayButton) {
+        autoplayButton.remove();
+        autoplayButton = null; // Reset button variable
+    }
+}
+
+
+// Example usage:
+// playAudio(1, 1); // Single play, no button
+// playAudio(1, 1, true); // Autoplay with button
+function showToast(message) {
+let toast = document.getElementById("toast");
+if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    document.body.appendChild(toast);
+}
+toast.textContent = message;
+toast.classList.add("show");
+
+setTimeout(() => {
+    toast.classList.remove("show");
+}, 3000);
+
+
+}
+
+// Event Listeners
+document.addEventListener("mouseover", function(event) {
+if (event.target.matches('.aya')) {
+showTooltip(event);
+}
+});
+
+//for mobile
+document.addEventListener("touchstart", function(event) { // Use touchstart
+if (event.target.matches('.aya')) {
+showTooltip(event);
+}
+});
+
+document.addEventListener("click", function(event) {
+if (!event.target.closest("#tafsirIframe") && !event.target.closest("#tooltip")) {
+hideTooltip();
+}
+});
+
+// --- CSS (Important!) ---  //NO NEED FOR CSS ALREADY DEFINED ABOVE
+// let style = document.createElement('style');
+// style.innerHTML = `
+
+// `;
+// document.head.appendChild(style);
+
+function createCopyButton(preElement) {
+
+        if (preElement.querySelector(".copy-button")) {
+            return;
+        }
+
+        const button = preElement.querySelector(".copy-button");
+
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            let codeContent = "";
+            // No need for ayaCount here; use the aya's text directly
+            codeContent = preElement.textContent.replace("📋", "").trim(); // Much simpler
+
+
+            setTextToClipboard(codeContent);
+
+            button.innerText = "✔";
+            setTimeout(() => { button.innerText = "📋"; }, 1000);
+        });
+    }
+
+    function setTextToClipboard(textToSet) {
+        const textArea = document.createElement("textarea");
+        textArea.value = textToSet;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+    }
+
+
+
+
+
+
+
+
+  var selectedReciter = `Alafasy_128kbps`
+
+
+//RECITER!!!!=================================================
+// --- CSS for styling ---
+const style = document.createElement('style');
+style.textContent = `
+  .reciter-image-div {
+    position: fixed;
+       top: 10%;
+    right: 20%;
+    width: 60px;
+    height: 60px;
+    cursor: pointer;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: none;
+    left: auto;
+    
+    /* Glassmorphism styles */
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .reciter-image-div:hover {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+      .reciter-image-div img {
+user-select: none;
+  }
+
+  .reciter-inner-image, .reciter-emoji-fallback {
+  user-select: none;
+  pointer-events:none;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    object-fit: cover; /* For images, though emoji won't use this */
+    border: 2px solid white;
+    pointer-events: none;
+    user-select: none;
+    display: flex; /* Use flex to center emoji text */
+    justify-content: center;
+    align-items: center;
+  }
+  .reciter-emoji-fallback, .option-emoji-fallback {
+    font-size: 2.5em; /* Adjust emoji size */
+    line-height: 1; /* Adjust line height for vertical centering */
+    background-color: white; /* Give emoji a background */
+    color: black; /* Emoji color */
+    border-radius: 50%; /* Make background circular */
+    padding: 0.1em; /* Padding around emoji */
+    box-sizing: border-box; /* Ensure padding is inside width/height */
+  }
+  .reciter-inner-image {
+      display: flex; /* Ensure image is shown by default if no error */
+  }
+
+
+  .reciter-dropdown-menu {
+    position: fixed;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+    width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .reciter-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 5px;
+  }
+
+  .reciter-option:last-child {
+    margin-bottom: 0;
+  }
+
+  .reciter-option:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .option-image, .option-emoji-fallback {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+    object-fit: cover; /* For images */
+    display: inline-flex; /* To be hidden/shown as needed */
+    justify-content: center;
+    align-items: center;
+  }
+  .option-emoji-fallback {
+    font-size: 1.3em; /* Smaller emoji for options */
+  }
+
+
+  .reciter-option.locked {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .reciter-option.locked .option-image {
+    filter: grayscale(100%);
+  }
+
+  .reciter-option.disabled {
+     color: grey;
+  }
+
+
+`;
+document.head.appendChild(style);
+
+
+function createReciterDropdown(reciters, hasanat) {
+  // Declare selectedReciter in a scope accessible outside the click handler
+
+  // 1. Create the reciter image element (DIV now for clickable area - no drag)
+  const reciterImageDiv = document.createElement('div');
+  reciterImageDiv.id = 'reciterImageDiv';
+  reciterImageDiv.classList.add('reciter-image-div');
+
+
+  reciterImageDiv.style.cursor = 'pointer'; // Cursor pointer
+
+
+  const reciterImage = document.createElement('img');
+  reciterImage.src = reciters.length > 0 && reciters[0].image ? reciters[0].image : ''; // Initially empty src
+  reciterImage.alt = "Reciter";
+  reciterImage.classList.add('reciter-inner-image');
+
+  const reciterEmojiFallback = document.createElement('span'); // Emoji fallback
+  reciterEmojiFallback.textContent = '📖'; // Quran Emoji
+  reciterEmojiFallback.classList.add('reciter-emoji-fallback');
+  reciterEmojiFallback.style.display = 'none'; // Initially hidden
+
+  reciterImage.onerror = function() { // Fallback to emoji on image error
+    reciterImage.style.display = 'none'; // Hide image
+    reciterEmojiFallback.style.display = 'flex'; // Show emoji
+  };
+  reciterImage.onload = function() { // If image loads successfully, ensure emoji is hidden
+    reciterImage.style.display = 'flex';
+    reciterEmojiFallback.style.display = 'none';
+  };
+  if (!reciters.length || !reciters[0].image) { // Initial state if no image provided
+      reciterImage.style.display = 'none';
+      reciterEmojiFallback.style.display = 'flex';
+  }
+
+
+  reciterImageDiv.appendChild(reciterImage);
+  reciterImageDiv.appendChild(reciterEmojiFallback); // Append emoji span
+
+  // 2. Create the glassmorphed dropdown menu
+  const dropdownMenu = document.createElement('div');
+  dropdownMenu.id = 'reciterDropdownMenu';
+  dropdownMenu.classList.add('reciter-dropdown-menu');
+  dropdownMenu.style.display = 'none';
+
+  // Populate the dropdown menu with reciter options (ALL reciters now)
+  reciters.forEach(reciter => {
+    const reciterOption = document.createElement('div');
+    reciterOption.classList.add('reciter-option');
+
+    const optionImage = document.createElement('img');
+    optionImage.src = reciter.image;
+    optionImage.alt = reciter.name;
+    optionImage.classList.add('option-image');
+    const optionEmojiFallback = document.createElement('span'); // Emoji fallback for options
+    optionEmojiFallback.textContent = '📖';
+    optionEmojiFallback.classList.add('option-emoji-fallback');
+    optionEmojiFallback.style.display = 'none';
+
+
+    optionImage.onerror = function() { // Fallback for option images too
+      optionImage.style.display = 'none';
+      optionEmojiFallback.style.display = 'inline-flex'; // Show emoji
+    };
+     optionImage.onload = function() { // If image loads successfully, ensure emoji is hidden
+        optionImage.style.display = 'inline-flex';
+        optionEmojiFallback.style.display = 'none';
+    };
+    if (!reciter.image) { // Initial state for options if no image provided
+        optionImage.style.display = 'none';
+        optionEmojiFallback.style.display = 'inline-flex';
+    }
+
+
+    const optionText = document.createElement('span');
+    optionText.textContent = reciter.name;
+    if (hasanat < reciter.hasanat) {
+      optionText.textContent += " (Locked)";
+      reciterOption.classList.add('locked');
+    }
+
+    reciterOption.appendChild(optionImage);
+    reciterOption.appendChild(optionEmojiFallback); // Append emoji span for options
+    reciterOption.appendChild(optionText);
+
+    if (hasanat >= reciter.hasanat) {
+      reciterOption.addEventListener('click', () => {
+        if (!reciterOption.classList.contains('locked')) {
+          // Apply reciter.value to the selectedReciter variable
+          selectedReciter = reciter.value;
+          console.log("Selected Reciter Value:", selectedReciter); // Log to verify
+
+          reciterImage.src = reciter.image;
+          reciterImage.style.display = 'flex'; // Ensure image is shown on update
+          reciterEmojiFallback.style.display = 'none'; // Hide emoji on update
+          console.log("Global variable 'reciter' set to:", window.reciter); // Keeping this line as it was in original code
+          dropdownMenu.style.display = 'none';
+        }
+      });
+    } else {
+      reciterOption.classList.add('disabled');
+    }
+
+    dropdownMenu.appendChild(reciterOption);
+  });
+
+  // 3. Event listener to toggle dropdown menu on image click (on the DIV now)
+  reciterImageDiv.addEventListener('pointerdown', (event) => {
+    if (dropdownMenu.style.display === 'none') {
+      // Calculate dropdown position based on image div position for dropdown
+      const divRect = reciterImageDiv.getBoundingClientRect();
+      dropdownMenu.style.top = `${divRect.bottom + window.scrollY + 5}px`;
+      dropdownMenu.style.left = `${divRect.left + divRect.width / 2 + window.scrollX}px`;
+      dropdownMenu.style.transform = 'translateX(-50%)';
+      dropdownMenu.style.display = 'block';
+    } else {
+      dropdownMenu.style.display = 'none';
+    }
+    event.stopPropagation();
+  });
+
+  // 4. Close dropdown when clicking outside
+  document.addEventListener('click', (event) => {
+    if (!dropdownMenu.contains(event.target) && event.target !== reciterImageDiv) {
+      dropdownMenu.style.display = 'none';
+    }
+  });
+
+
+  // 6. Inject elements into the DOM
+  document.body.appendChild(reciterImageDiv);
+  document.body.appendChild(dropdownMenu);
+
+  return { reciterImageDiv, dropdownMenu, getSelectedReciter: () => selectedReciter };
+}
+
+
+// Example Usage (assuming 'reciters' array is already defined as in previous response)
+// ---  You MUST define the 'reciters' array before calling this function.  ---
+
+// Create a test 'reciters' array (replace with your actual data)
+const reciters = [
+
+{
+    value: "AbdulSamad_64kbps_QuranExplorer.Com",
+    name: "عبد الصمد",
+    image: "image_url_for_abdul_samad",
+    hasanat: 0, // Example score
+    text: "مرحبا بكم في تلاوة الشيخ عبد الصمد. جزاه الله خيرا على تلاوته العطرة."
+},
+{
+    value: "Abdul_Basit_Mujawwad_128kbps",
+    name: "عبد الباسط مجود",
+    image: "image_url_for_abdul_basit_mujawwad",
+    hasanat: 0,
+    text: "نرحب بكم في تلاوة الشيخ عبد الباسط المرتلة.  بارك الله فيه وفي تلاوته."
+},
+{
+    value: "Abdul_Basit_Murattal_192kbps",
+    name: "عبد الباسط مرتل",
+    image: "image_url_for_abdul_basit_murattal",
+    hasanat: 0,
+    text: "مرحبا بكم في تلاوة الشيخ عبد الباسط.  نسأل الله أن ينفعنا بتلاوته."
+},
+   {
+    value: "Abdul_Basit_Murattal_64kbps",
+    name: "عبد الباسط مرتل",
+    image: "image_url_for_abdul_basit_murattal",
+    hasanat: 0,
+    text: "مرحبا بكم في تلاوة الشيخ عبد الباسط.  نسأل الله أن ينفعنا بتلاوته."
+},
+{
+    value: "Abdullaah_3awwaad_Al-Juhaynee_128kbps",
+    name: "عبد الله عواد الجهني",
+    image: "image_url_for_abdullah_awwad",
+    hasanat: 0,
+    text: "استمعوا إلى تلاوة القارئ الشيخ عبد الله عواد الجهني.  تقبل الله منه."
+},
+{
+    value: "Abdullah_Basfar_192kbps",
+    name: "عبد الله بصفر",
+    image: "image_url_for_abdullah_basfar",
+    hasanat: 0,
+    text: "مرحبا بكم في تلاوة الشيخ عبد الله بصفر.  اللهم اجعلها في ميزان حسناته."
+},
+
+
+{
+value: "Abdullah_Basfar_32kbps",
+name: "عبد الله بصفر",
+image: "image_url_for_abdullah_basfar",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ عبد الله بصفر.  اللهم اجعلها في ميزان حسناته."
+},
+{
+value: "Abdullah_Basfar_64kbps",
+name: "عبد الله بصفر",
+image: "image_url_for_abdullah_basfar",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ عبد الله بصفر.  اللهم اجعلها في ميزان حسناته."
+},
+{
+value: "Abdullah_Matroud_128kbps",
+name: "عبد الله مطرود",
+image: "image_url_for_abdullah_matroud",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ عبد الله مطرود.  جزاه الله عنا خير الجزاء."
+},
+{
+value: "Abdurrahmaan_As-Sudais_192kbps",
+name: "عبد الرحمن السديس",
+image: "image_url_for_abdurrahman_as_sudais",
+hasanat: 0,
+text: "إليكم تلاوة مباركة للشيخ عبد الرحمن السديس.  اللهم تقبلها منه."
+},
+{
+value: "Abdurrahmaan_As-Sudais_64kbps",
+name: "عبد الرحمن السديس",
+image: "image_url_for_abdurrahman_as_sudais",
+hasanat: 0,
+text: "إليكم تلاوة مباركة للشيخ عبد الرحمن السديس.  اللهم تقبلها منه."
+},
+{
+    value: "Abu_Bakr_Ash-Shaatree_128kbps",
+    name: "أبو بكر الشاطري",
+    image: "image_url_for_abu_bakr_ash_shaatri",
+    hasanat: 0,
+    text: "تلاوة عطرة من الشيخ أبو بكر الشاطري.  بارك الله فيه."
+},
+{
+value: "Abu_Bakr_Ash-Shaatree_64kbps",
+name: "أبو بكر الشاطري",
+image: "image_url_for_abu_bakr_ash_shaatri",
+hasanat: 0,
+text: "تلاوة عطرة من الشيخ أبو بكر الشاطري.  بارك الله فيه."
+},
+{
+value: "Ahmed_Neana_128kbps",
+name: "أحمد نعينع",
+image: "image_url_for_ahmed_neana",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ أحمد نعينع.  اللهم اجزله عنا خير الجزاء."
+},
+{
+value: "Ahmed_ibn_Ali_al_Ajamy_128kbps_ketaballah.net",
+name: "أحمد بن علي العجمي",
+image: "image_url_for_ahmed_ibn_ali_al_ajamy",
+hasanat: 0,
+text: "نقدم لكم تلاوة الشيخ أحمد بن علي العجمي.  اللهم تقبل منه صالح الأعمال."
+},
+{
+value: "Ahmed_ibn_Ali_al_Ajamy_64kbps_QuranExplorer.Com",
+name: "أحمد بن علي العجمي",
+image: "image_url_for_ahmed_ibn_ali_al_ajamy",
+hasanat: 0,
+text: "نقدم لكم تلاوة الشيخ أحمد بن علي العجمي.  اللهم تقبل منه صالح الأعمال."
+},
+{
+value: "Akram_AlAlaqimy_128kbps",
+name: "أكرم العلاقمي",
+image: "image_url_for_akram_alalaqimy",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ أكرم العلاقمي.  جزاه الله خيرا."
+},
+{
+value: "Alafasy_128kbps",
+name: "مشاري العفاسي",
+image: "image_url_for_alafasy",
+hasanat: 0,
+text: "إليكم تلاوة مباركة للشيخ مشاري العفاسي.  اللهم بارك في صوته."
+},
+{
+value: "Alafasy_64kbps",
+name: "مشاري العفاسي",
+image: "image_url_for_alafasy",
+hasanat: 0,
+text: "إليكم تلاوة مباركة للشيخ مشاري العفاسي.  اللهم بارك في صوته."
+},
+{
+value: "Ali_Hajjaj_AlSuesy_128kbps",
+name: "علي حجاج السويسي",
+image: "image_url_for_ali_hajjaj_alsuesy",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ علي حجاج السويسي.  اللهم اجعلها في ميزان حسناته."
+},
+{
+value: "Ali_Jaber_64kbps",
+name: "علي جابر",
+image: "image_url_for_ali_jaber",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ علي جابر.  رحمه الله رحمة واسعة."
+},
+{
+value: "Ayman_Sowaid_64kbps",
+name: "أيمن سويد",
+image: "image_url_for_ayman_sowaid",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ أيمن سويد.  اللهم وفقه لكل خير."
+},
+{
+value: "English/Sahih_Intnl_Ibrahim_Walk_192kbps",
+name: "إبراهيم والك (ترجمة انجليزية)",
+image: "image_url_for_ibrahim_walk",
+hasanat: 0,
+text: ".هذه ترجمة لمعاني القرآن الكريم باللغة الإنجليزية"
+},
+{
+value: "Fares_Abbad_64kbps",
+name: "فارس عباد",
+image: "image_url_for_fares_abbad",
+hasanat: 0,
+text: "تلاوة مباركة من الشيخ فارس عباد.  اللهم تقبلها منه."
+},
+{
+value: "Ghamadi_40kbps",
+name: "سعد الغامدي",
+image: "image_url_for_ghamadi",
+hasanat: 0,
+text: "إليكم تلاوة عطرة للشيخ سعد الغامدي.  اللهم اجعلها في ميزان حسناته."
+},
+{
+value: "Hani_Rifai_192kbps",
+name: "هاني الرفاعي",
+image: "image_url_for_hani_rifai",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ هاني الرفاعي.  جزاه الله عنا خير الجزاء."
+},
+{
+value: "Hani_Rifai_64kbps",
+name: "هاني الرفاعي",
+image: "image_url_for_hani_rifai",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ هاني الرفاعي.  جزاه الله عنا خير الجزاء."
+},
+{
+value: "Hudhaify_128kbps",
+name: "علي الحذيفي",
+image: "image_url_for_hudhaify",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ علي الحذيفي.  تقبل الله منه."
+},
+{
+value: "Hudhaify_32kbps",
+name: "علي الحذيفي",
+image: "image_url_for_hudhaify",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ علي الحذيفي.  تقبل الله منه."
+},
+{
+value: "Hudhaify_64kbps",
+name: "علي الحذيفي",
+image: "image_url_for_hudhaify",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ علي الحذيفي.  تقبل الله منه."
+},
+{
+value: "Husary_128kbps",
+name: "محمود خليل الحصري",
+image: "image_url_for_husary",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ محمود خليل الحصري. رحمه الله رحمة واسعة."
+},
+{
+value: "Husary_128kbps_Mujawwad",
+name: "محمود خليل الحصري مجود",
+image: "image_url_for_husary_mujawwad",
+hasanat: 0,
+text: "إليكم تلاوة مجودة للشيخ محمود خليل الحصري.  رحمه الله."
+},
+{
+value: "Husary_64kbps",
+name: "محمود خليل الحصري",
+image: "image_url_for_husary",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ محمود خليل الحصري. رحمه الله رحمة واسعة."
+},
+{
+value: "Husary_Muallim_128kbps",
+name: "محمود خليل الحصري معلم",
+image: "image_url_for_husary_muallim",
+hasanat: 0,
+text: "تلاوة معلمة من الشيخ محمود خليل الحصري.  جزاه الله خيرا."
+},
+{
+value: "Husary_Mujawwad_64kbps",
+name: "محمود خليل الحصري مجود",
+image: "image_url_for_husary_mujawwad",
+hasanat: 0,
+text: "إليكم تلاوة مجودة للشيخ محمود خليل الحصري.  رحمه الله."
+},
+{
+value: "Ibrahim_Akhdar_32kbps",
+name: "إبراهيم الأخضر",
+image: "image_url_for_ibrahim_akhdar",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ إبراهيم الأخضر.  بارك الله فيه."
+},
+{
+value: "Ibrahim_Akhdar_64kbps",
+name: "إبراهيم الأخضر",
+image: "image_url_for_ibrahim_akhdar",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ إبراهيم الأخضر.  بارك الله فيه."
+},
+{
+value: "Karim_Mansoori_40kbps",
+name: "كريم منصوري",
+image: "image_url_for_karim_mansoori",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ كريم منصوري.  جزاه الله خيرا."
+},
+{
+value: "Khaalid_Abdullaah_al-Qahtaanee_192kbps",
+name: "خالد عبد الله القحطاني",
+image: "image_url_for_khalid_alqahtani",
+hasanat: 0,
+text: "تلاوة مباركة من الشيخ خالد عبد الله القحطاني.  اللهم تقبلها منه."
+},
+{
+value: "MaherAlMuaiqly128kbps",
+name: "ماهر المعيقلي",
+image: "image_url_for_maher_almuaiqly",
+hasanat: 0,
+text: "إليكم تلاوة عطرة للشيخ ماهر المعيقلي.  اللهم بارك في صوته."
+},
+{
+value: "Maher_AlMuaiqly_64kbps",
+name: "ماهر المعيقلي",
+image: "image_url_for_maher_almuaiqly",
+hasanat: 0,
+text: "إليكم تلاوة عطرة للشيخ ماهر المعيقلي.  اللهم بارك في صوته."
+},
+{
+value: "Menshawi_16kbps",
+name: "محمد صديق المنشاوي",
+image: "image_url_for_menshawi",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ محمد صديق المنشاوي. رحمه الله."
+},
+{
+value: "Menshawi_32kbps",
+name: "محمد صديق المنشاوي",
+image: "image_url_for_menshawi",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ محمد صديق المنشاوي. رحمه الله."
+},
+{
+value: "Minshawy_Mujawwad_192kbps",
+name: "محمد صديق المنشاوي مجود",
+image: "image_url_for_minshawy_mujawwad",
+hasanat: 0,
+text: "إليكم تلاوة مجودة للشيخ محمد صديق المنشاوي.  رحمه الله."
+},
+{
+value: "Minshawy_Mujawwad_64kbps",
+name: "محمد صديق المنشاوي مجود",
+image: "image_url_for_minshawy_mujawwad",
+hasanat: 0,
+text: "إليكم تلاوة مجودة للشيخ محمد صديق المنشاوي.  رحمه الله."
+},
+{
+value: "Minshawy_Murattal_128kbps",
+name: "محمد صديق المنشاوي مرتل",
+image: "image_url_for_minshawy_murattal",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ محمد صديق المنشاوي.  رحمه الله رحمة واسعة."
+},
+{
+value: "Mohammad_al_Tablaway_128kbps",
+name: "محمد الطبلاوي",
+image: "image_url_for_mohammad_altablaway",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ محمد الطبلاوي.  رحمه الله."
+},
+{
+value: "Mohammad_al_Tablaway_64kbps",
+name: "محمد الطبلاوي",
+image: "image_url_for_mohammad_altablaway",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ محمد الطبلاوي.  رحمه الله."
+},
+{
+value: "Muhammad_AbdulKareem_128kbps",
+name: "محمد عبد الكريم",
+image: "image_url_for_muhammad_abdulkareem",
+hasanat: 0,
+text: "مرحبا بكم في تلاوة الشيخ محمد عبد الكريم.  جزاه الله خيرا."
+},
+{
+value: "Muhammad_Ayyoub_128kbps",
+name: "محمد أيوب",
+image: "image_url_for_muhammad_ayyoub",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ محمد أيوب.  رحمه الله."
+},
+{
+value: "Muhammad_Ayyoub_32kbps",
+name: "محمد أيوب",
+image: "image_url_for_muhammad_ayyoub",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ محمد أيوب.  رحمه الله."
+},
+{
+value: "Muhammad_Ayyoub_64kbps",
+name: "محمد أيوب",
+image: "image_url_for_muhammad_ayyoub",
+hasanat: 0,
+text: "نرحب بكم في تلاوة الشيخ محمد أيوب.  رحمه الله."
+},
+{
+value: "Muhammad_Jibreel_128kbps",
+name: "محمد جبريل",
+image: "image_url_for_muhammad_jibreel",
+hasanat: 0,
+text: "إليكم تلاوة عطرة للشيخ محمد جبريل.  اللهم تقبلها منه."
+},
+{
+value: "Muhammad_Jibreel_64kbps",
+name: "محمد جبريل",
+image: "image_url_for_muhammad_jibreel",
+hasanat: 0,
+text: "إليكم تلاوة عطرة للشيخ محمد جبريل.  اللهم تقبلها منه."
+},
+{
+value: "Muhsin_Al_Qasim_192kbps",
+name: "محسن القاسم",
+image: "image_url_for_muhsin_alqasim",
+hasanat: 0,
+text: "تلاوة مباركة من الشيخ محسن القاسم.  جزاه الله خيرا."
+},
+{
+value: "MultiLanguage/Basfar_Walk_192kbps",
+name: "عبد الله بصفر وإبراهيم والك (متعدد اللغات)",
+image: "image_url_for_basfar_walk_multilanguage",  // Replace with an appropriate URL
+hasanat: 0,
+text: "تلاوة للقرآن الكريم بصوت الشيخ عبد الله بصفر مع ترجمة لمعاني القرآن بصوت إبراهيم والك."
+},
+{
+value: "Mustafa_Ismail_48kbps",
+name: "مصطفى إسماعيل",
+image: "image_url_for_mustafa_ismail",
+hasanat: 0,
+text: "استمعوا إلى تلاوة القارئ الشيخ مصطفى إسماعيل. رحمه الله."
+},
+{
+value: "Nabil_Rifai_48kbps",
+name: "نبيل الرفاعي",
+image: "image_url_for_nabil_rifai",  // Corrected variable name
+hasanat: 190,
+text: "مرحبا بكم في تلاوة الشيخ نبيل الرفاعي. جزاه الله خيرا."
+},
+{
+value: "Nasser_Alqatami_128kbps",
+name: "ناصر القطامي",
+image: "image_url_for_nasser_alqatami",
+hasanat: 300,
+text: "إليكم تلاوة عطرة للشيخ ناصر القطامي. اللهم بارك في صوته."
+},
+{
+value: "Parhizgar_48kbps",
+name: "شهريار برهيزكار",
+image: "image_url_for_parhizgar",
+hasanat: 170,
+text: "استمعوا إلى تلاوة القارئ الشيخ شهريار برهيزكار. جزاه الله خيرا."
+},
+{
+value: "Sahl_Yassin_128kbps",
+name: "سهل ياسين",
+image: "image_url_for_sahl_yassin",
+hasanat: 180,
+text: "مرحبا بكم في تلاوة الشيخ سهل ياسين. بارك الله فيه."
+},
+{
+value: "Salaah_AbdulRahman_Bukhatir_128kbps",
+name: "صلاح عبد الرحمن بو خاطر",
+image: "image_url_for_salaah_bukhatir",
+hasanat: 240,
+text: "نرحب بكم في تلاوة الشيخ صلاح عبد الرحمن بو خاطر. جزاه الله خيرا."
+},
+{
+value: "Salah_Al_Budair_128kbps",
+name: "صلاح البدير",
+image: "image_url_for_salah_albudair",
+hasanat: 260,
+text: "إليكم تلاوة عطرة للشيخ صلاح البدير. اللهم تقبلها منه."
+},
+{
+value: "Saood_ash-Shuraym_128kbps",
+name: "سعود الشريم",
+image: "image_url_for_saood_ash_shuraym",
+hasanat: 310,
+text: "استمعوا إلى تلاوة القارئ الشيخ سعود الشريم. اللهم وفقه لكل خير."
+},
+{
+value: "Saood_ash-Shuraym_64kbps",
+name: "سعود الشريم",
+image: "image_url_for_saood_ash_shuraym",
+hasanat: 310,
+text: "استمعوا إلى تلاوة القارئ الشيخ سعود الشريم. اللهم وفقه لكل خير."
+},
+{
+value: "Yaser_Salamah_128kbps",
+name: "ياسر سلامة",
+image: "image_url_for_yaser_salamah",
+hasanat: 220,
+text: "مرحبا بكم في تلاوة الشيخ ياسر سلامة. بارك الله فيه."
+},
+{
+value: "Yasser_Ad-Dussary_128kbps",
+name: "ياسر الدوسري",
+image: "image_url_for_yasser_ad_dussary",
+hasanat: 330,
+text: "إليكم تلاوة مباركة للشيخ ياسر الدوسري. اللهم اجعلها في ميزان حسناته."
+},
+{
+value: "ahmed_ibn_ali_al_ajamy_128kbps",
+name: "أحمد بن علي العجمي",
+image: "image_url_for_ahmed_ibn_ali_al_ajamy",
+hasanat: 280,
+text: "نقدم لكم تلاوة الشيخ أحمد بن علي العجمي. اللهم تقبل منه صالح الأعمال."
+},
+{
+value: "aziz_alili_128kbps",
+name: "عزيز العليلي",
+image: "image_url_for_aziz_alili",
+hasanat: 200,
+text: "استمعوا إلى تلاوة القارئ الشيخ عزيز العليلي. جزاه الله خيرا."
+},
+{
+value: "khalefa_al_tunaiji_64kbps",
+name: "خليفة الطنيجي",
+image: "image_url_for_khalifa_altunaiji",
+hasanat: 250,
+text: "مرحبا بكم في تلاوة الشيخ خليفة الطنيجي. بارك الله فيه."
+},
+{
+value: "mahmoud_ali_al_banna_32kbps",
+name: "محمود علي البنا",
+image: "image_url_for_mahmoud_ali_albanna",
+hasanat: 270,
+text: "نرحب بكم في تلاوة الشيخ محمود علي البنا. رحمه الله."
+},
+{
+value: "translations/Fooladvand_Hedayatfar_40Kbps",
+name: "فولادوند و هدايت فر (ترجمة فارسية)",
+image: "image_url_for_fooladvand_hedayatfar",
+hasanat: 10,
+text: ".هذه ترجمة لمعاني القرآن الكريم باللغة الفارسية"
+},
+{
+value: "translations/Makarem_Kabiri_16Kbps",
+name: "مكارم الشيرازي و كبيري (ترجمة فارسية)",
+image: "image_url_for_makarem_kabiri",
+hasanat: 10,
+text: ".هذه ترجمة لمعاني القرآن الكريم باللغة الفارسية"
+},
+{
+value: "translations/azerbaijani/balayev",
+name: "بالايف (ترجمة أذربيجانية)",
+image: "image_url_for_balayev_azerbaijani",
+hasanat: 10,
+text: ".بو قرآن كريمين آذربايجان ديلينه ترجمه سيدير"
+},
+{
+value: "translations/besim_korkut_ajet_po_ajet",
+name: "بسيم كوركوت (ترجمة بوسنية)",
+image: "image_url_for_besim_korkut",
+hasanat: 10,
+text: ".Ово је пријевод значења Кур'ана на босански језик"
+},
+{
+value: "translations/urdu_farhat_hashmi",
+name: "فرحت هاشمي (ترجمة أردية)",
+image: "image_url_for_farhat_hashmi_urdu",
+hasanat: 10,
+text: ".یہ قرآن کریم کے معانی کا اردو ترجمہ ہے"
+},
+{
+value: "translations/urdu_shamshad_ali_khan_46kbps",
+name: "شمشاد علي خان (ترجمة أردية)",
+image: "image_url_for_shamshad_ali_khan_urdu",
+hasanat: 10,
+text: ".یہ قرآن کریم کے معانی کا اردو ترجمہ ہے"
+},
+{
+value: "warsh/warsh_Abdul_Basit_128kbps",
+name: "عبد الباسط (ورش)",
+image: "image_url_for_warsh_abdul_basit",
+hasanat: 290,
+text: "مرحبا بكم في تلاوة الشيخ عبد الباسط برواية ورش عن نافع. رحمه الله."
+},
+{
+value: "warsh/warsh_ibrahim_aldosary_128kbps",
+name: "إبراهيم الدوسري (ورش)",
+image: "image_url_for_warsh_ibrahim_aldosary",
+hasanat: 270,
+text: "إليكم تلاوة برواية ورش عن نافع للشيخ إبراهيم الدوسري. جزاه الله خيرا."
+},
+{
+value: "warsh/warsh_yassin_al_jazaery_64kbps",
+name: "ياسين الجزائري (ورش)",
+image: "image_url_for_warsh_yassin_al_jazaery",
+hasanat: 250,
+text: "استمعوا إلى تلاوة برواية ورش عن نافع للشيخ ياسين الجزائري. تقبل الله منه."
+}
+
+];
+
+// Create a div in your HTML to hold the dropdown:  <div id="dropdownContainer"></div>
+// Then you can call the function:
+
+// Call the function with a sample 'hasanat' value
+createReciterDropdown(reciters, 80); // Example: User has 80 hasanat
+
+// To update the dropdown when hasanat changes, remove the old one and create a new one:
+function updateReciterDropdown(reciters, newHasanat) {
+const oldDropdown = document.getElementById('reciterDropdown');
+if (oldDropdown) {
+oldDropdown.remove();  // Remove the old dropdown
+}
+createReciterDropdown(reciters, newHasanat); // Create a new dropdown with updated hasanat
+}
+
+// Example usage of the update function:
+// updateReciterDropdown(testReciters, 120); //Now Reciter Two is selectable
+
+// reader mode
+// --- Reader Mode Variables and Functions ---
+let readerModeActive = false;
+let readerWords = [];
+let readerWordIndex = 0;
+let readerInterval;
+let readerSpeed = 2.0; // Default speed
+let readerFontSize = 38; // Default font size
+let readerHasanatCount = 0;
+let globalHasanat = parseInt(localStorage.getItem('hasanat')) || 0; // Load cached hasanat
+
+function openReaderModeModal(soraIndex) {
+console.log("openReaderModeModal START - soraIndex:", soraIndex);
+
+console.log("Checking if sorasData is defined...", typeof sorasData);
+if (typeof sorasData === 'undefined') {
+    console.error("ERROR: sorasData is UNDEFINED! Make sure sorasData is loaded and defined BEFORE this script.");
+    return; // Stop execution if sorasData is missing
+}
+console.log("sorasData is defined. Proceeding.");
+
+const modal = document.getElementById('readerModeModal');
+const textDisplay = document.getElementById('readerTextDisplay');
+const hasanatDisplay = document.getElementById('currentReaderHasanat');
+const playPauseIcon = document.getElementById('playPauseIcon');
+const speedDisplay = document.getElementById('readerSpeedDisplay'); // Get speed display
+
+console.log("DOM Elements - Getting elements by ID...");
+if (!modal) { console.error("ERROR: Element with ID 'readerModeModal' not found!"); return; }
+if (!textDisplay) { console.error("ERROR: Element with ID 'readerTextDisplay' not found!"); return; }
+if (!hasanatDisplay) { console.error("ERROR: Element with ID 'currentReaderHasanat' not found!"); return; }
+if (!playPauseIcon) { console.error("ERROR: Element with ID 'playPauseIcon' not found!"); return; }
+if (!speedDisplay) { console.error("ERROR: Element with ID 'readerSpeedDisplay' not found!"); return; }
+console.log("DOM Elements - All elements found.");
+
+readerHasanatCount = 0; // Reset hasanat for this session
+hasanatDisplay.textContent = readerHasanatCount;
+console.log("Hasanat count reset and displayed.");
+
+console.log("Finding soraData for index:", soraIndex);
+const soraData = sorasData.find(sora => sora.index === soraIndex);
+if (!soraData) {
+    console.error("ERROR: Sora data NOT FOUND for index:", soraIndex);
+    console.log("Current sorasData:", sorasData); // Log the current sorasData to inspect it
+    return;
+}
+console.log("Sora data found:", soraData);
+
+readerWords = [];
+console.log("Preparing readerWords from soraData.ayat...");
+soraData.ayat.forEach(ayaText => {
+    const words = ayaText.trim().split(/\s+/);
+    readerWords = readerWords.concat(words);
+});
+console.log("readerWords prepared. Word count:", readerWords.length);
+
+textDisplay.innerHTML = '';
+readerWordIndex = 0;
+console.log("Text display cleared, readerWordIndex reset.");
+
+readerModeActive = true; // Moved this line up
+console.log("readerModeActive set to true.");
+
+displayNextWord(); // Initial display
+console.log("Initial displayNextWord() called.");
+
+modal.style.display = 'block';
+console.log("Modal display set to 'block'.");
+
+startReaderMode(); // Start reading interval
+console.log("startReaderMode() called.");
+
+console.log("openReaderModeModal END - Reader mode should be starting.");
+
+
+}
+
+function closeReaderModeModal() {
+console.log("closeReaderModeModal called");
+const modal = document.getElementById('readerModeModal');
+modal.style.display = 'none';
+readerModeActive = false;
+pauseReaderMode();
+updateGlobalHasanat(readerHasanatCount);
+console.log("closeReaderModeModal END - Reader mode closed.");
+}
+
+function startReaderMode() {
+console.log("startReaderMode START");
+if (!readerInterval) {
+console.log("No readerInterval active. Creating new interval.");
+readerInterval = setInterval(displayNextWord, getDelayForSpeed());
+document.getElementById('playPauseIcon').classList.remove('fa-play');
+document.getElementById('playPauseIcon').classList.add('fa-pause');
+console.log("setInterval created with delay:", getDelayForSpeed());
+} else {
+console.log("readerInterval already active. Not creating new one.");
+}
+console.log("startReaderMode END");
+}
+
+function pauseReaderMode() {
+console.log("pauseReaderMode START");
+if (readerInterval) {
+console.log("readerInterval is active. Clearing interval.");
+clearInterval(readerInterval);
+readerInterval = null;
+document.getElementById('playPauseIcon').classList.remove('fa-pause');
+document.getElementById('playPauseIcon').classList.add('fa-play');
+console.log("setInterval cleared.");
+} else {
+console.log("readerInterval is not active. Nothing to pause.");
+}
+console.log("pauseReaderMode END");
+}
+
+function togglePlayPauseReaderMode() {
+console.log("togglePlayPauseReaderMode called");
+if (readerInterval) {
+pauseReaderMode();
+} else {
+startReaderMode();
+}
+console.log("togglePlayPauseReaderMode END");
+}
+
+function displayNextWord() {
+console.log("displayNextWord START - readerWordIndex:", readerWordIndex, "readerModeActive:", readerModeActive);
+if (!readerModeActive) {
+console.log("displayNextWord - readerModeActive is FALSE. Exiting.");
+return;
+}
+
+const textDisplay = document.getElementById('readerTextDisplay');
+if (!textDisplay) {
+    console.error("ERROR: Element with ID 'readerTextDisplay' NOT FOUND in displayNextWord!");
+    return;
+}
+
+if (readerWordIndex < readerWords.length) {
+    const word = readerWords[readerWordIndex];
+    console.log("Displaying word:", word);
+    textDisplay.innerHTML = '';
+    const wordSpan = document.createElement('span');
+    wordSpan.textContent = word + ' ';
+    wordSpan.classList.add('current-word');
+    textDisplay.appendChild(wordSpan);
+
+    readerHasanatCount += countHasanat(word);
+    document.getElementById('currentReaderHasanat').textContent = readerHasanatCount;
+    console.log("Hasanat updated, readerWordIndex incremented.");
+
+    readerWordIndex++;
+} else {
+    console.log("All words displayed. Pausing reader and displaying 'تمت القراءة'");
+    pauseReaderMode();
+    textDisplay.textContent = 'تمت القراءة';
+}
+console.log("displayNextWord END");
+
+
+}
+
+function adjustReaderSpeed(increment) {
+console.log("adjustReaderSpeed START - increment:", increment);
+readerSpeed = Math.max(0.1, readerSpeed + increment);
+document.getElementById('readerSpeedDisplay').textContent = readerSpeed.toFixed(1) + 'x';
+if (readerInterval) {
+console.log("readerInterval active, restarting with new speed.");
+clearInterval(readerInterval);
+startReaderMode();
+} else {
+console.log("readerInterval not active, speed adjusted.");
+}
+console.log("adjustReaderSpeed END - new speed:", readerSpeed);
+}
+
+function getDelayForSpeed() {
+const delay = 2000 / readerSpeed;
+console.log("getDelayForSpeed - current speed:", readerSpeed, "delay:", delay);
+return delay;
+}
+
+function adjustReaderFont(increment) {
+console.log("adjustReaderFont START - increment:", increment);
+readerFontSize = Math.max(12, readerFontSize + increment);
+document.getElementById('readerTextDisplay').style.fontSize = `${readerFontSize}px`;
+console.log("adjustReaderFont END - new fontSize:", readerFontSize);
+}
+
+function countHasanat(text) {
+const hasanat = text.length * 10;
+console.log("countHasanat - text:", text, "hasanat:", hasanat);
+return hasanat;
+}
+
+function updateGlobalHasanat(hasanatToAdd) {
+globalHasanat += hasanatToAdd;
+localStorage.setItem('hasanat', globalHasanat);
+console.log(`updateGlobalHasanat - Added ${hasanatToAdd} hasanat. Total global hasanat: ${globalHasanat}`);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+initializeScrollAndDrag();
+
+// transformToCardFan(); // No need to call transformToCardFan here, cards are created in fan mode directly now.
+});
+
+function initializeScrollAndDrag() {
+    const soraGrid = document.querySelector('.sora-grid');
+    if (!soraGrid) {
+        console.error("Sora grid not found for scroll and drag initialization.");
+        return;
+    }
+
+    const soraRows = document.querySelectorAll('.sora-row');
+
+    function handleScroll(element, e) {
+        if (isFanMode) {
+            e.preventDefault();
+            element.scrollLeft += e.deltaY;
+        }
+    }
+
+    function handleMouseDrag(element) {
+        let isMouseDown = false;
+        let startX;
+        let startScrollLeft;
+
+        element.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            startX = e.pageX - element.offsetLeft;
+            startScrollLeft = element.scrollLeft;
+            element.classList.add('grabbing');
+        });
+        element.addEventListener('mouseleave', () => {
+            isMouseDown = false;
+            element.classList.remove('grabbing');
+        });
+        element.addEventListener('mouseup', () => {
+            isMouseDown = false;
+            element.classList.remove('grabbing');
+        });
+        element.addEventListener('mousemove', (e) => {
+            if (!isMouseDown) return;
+            e.preventDefault();
+            const x = e.pageX - element.offsetLeft;
+            const walk = (x - startX) * 1;
+            if (isFanMode) {
+                element.scrollLeft = startScrollLeft - walk;
+            }
+        });
+    }
+
+    function handleTouchDrag(element) {
+        let touchStartX = 0;
+        let touchStartScrollLeft = 0;
+
+        element.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].pageX;
+            touchStartScrollLeft = element.scrollLeft;
+            e.preventDefault(); // Prevent default touch behavior, like scrolling the entire page
+        });
+        element.addEventListener('touchmove', (e) => {
+
+            const touchX = e.touches[0].pageX;
+            const walk = (touchX - touchStartX) * 1; // Adjust sensitivity
+            if (isFanMode) {
+                element.scrollLeft = touchStartScrollLeft - walk;
+                e.preventDefault();
+            }
+
+        });
+    }
+
+    // Apply event listeners to the main grid
+    soraGrid.addEventListener('wheel', (e) => handleScroll(soraGrid, e));
+    handleMouseDrag(soraGrid);
+    handleTouchDrag(soraGrid);
+
+    // Apply event listeners to each row inside the grid
+    soraRows.forEach(row => {
+        row.addEventListener('wheel', (e) => handleScroll(row, e));
+        handleMouseDrag(row);
+        handleTouchDrag(row);
+    });
+
+
+}
+
+
+</script>
+<script>
+function videoBackground(backgroundItems) {
+
+  if (!Array.isArray(backgroundItems) || backgroundItems.length === 0) {
+    console.error("videoBackground: Background items array is empty or not an array.");
+    return;
+  }
+
+  let currentBackgroundIndex = 0;
+  let videoPlayer; // Will hold either YouTube player or <video> element
+  let imageElement; // Will hold the <img> element for images
+  let videoPlaying = true; // Initially assume video is playing
+  let isVideoBackground = false; // Flag to track if the current background is a video
+
+  // --- Caching Logic ---
+  const cachedBackgroundIndex = localStorage.getItem('videoBackgroundIndex');
+  if (cachedBackgroundIndex !== null) {
+    currentBackgroundIndex = parseInt(cachedBackgroundIndex);
+    if (currentBackgroundIndex < 0 || currentBackgroundIndex >= backgroundItems.length) {
+      currentBackgroundIndex = 0;
+    }
+  }
+
+  // Create container for background
+  const backgroundContainer = document.createElement('div');
+  backgroundContainer.id = 'video-background-container';
+  document.body.appendChild(backgroundContainer);
+
+  // --- Navigation Buttons (Left & Right) ---
+  const prevButton = document.createElement('button');
+  prevButton.id = 'video-prev-button';
+  prevButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12L15.41 7.41Z" fill="currentColor"/></svg>`;
+  prevButton.setAttribute('aria-label', 'Previous Background');
+
+  const nextButton = document.createElement('button');
+  nextButton.id = 'video-next-button';
+  nextButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.59 16.59L10 18L16 12L10 6L8.59 7.41L13.17 12L8.59 16.59Z" fill="currentColor"/></svg>`;
+  nextButton.setAttribute('aria-label', 'Next Background');
+
+  document.body.appendChild(prevButton);
+  document.body.appendChild(nextButton);
+
+  // --- Play/Pause Buttons (Center) ---
+  const playPauseContainer = document.createElement('div');
+  playPauseContainer.id = 'video-play-pause-container';
+
+  const playButton = document.createElement('button');
+  playButton.id = 'video-play-button';
+  playButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5.14V19.14L19 12.14L8 5.14Z" fill="currentColor"/></svg>`; // Play SVG
+  playButton.setAttribute('aria-label', 'Play Video Background');
+  playButton.style.display = 'none'; // Initially hidden
+
+  const pauseButton = document.createElement('button');
+  pauseButton.id = 'video-pause-button';
+  pauseButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19H4V5H6V19ZM10 19H8V5H10V19Z" fill="currentColor"/></svg>`; // Pause SVG
+  pauseButton.setAttribute('aria-label', 'Pause Video Background');
+
+  playPauseContainer.appendChild(playButton);
+  playPauseContainer.appendChild(pauseButton);
+
+  // Inject playPauseContainer above .sora-row if it exists, otherwise append to body
+  const soraRowElement = document.querySelector('.sora-row');
+  if (soraRowElement) {
+    soraRowElement.parentNode.insertBefore(playPauseContainer, soraRowElement);
+  } else {
+    document.body.appendChild(playPauseContainer);
+  }
+
+
+  // --- CSS Styling (Inline for simplicity, better to put in CSS file) ---
+  const style = document.createElement('style');
+  style.textContent = `
+    #video-background-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 106%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    #video-background-container iframe,
+    #video-background-container video,
+    #video-background-container img { /* Added img selector */
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+
+    #video-prev-button, #video-next-button,
+    #video-play-button, #video-pause-button {
+      position: absolute;
+      z-index: 3;
+      background-color: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+      padding: 10px;
+      color: white;
+      font-size: 16px; /* Fallback text size */
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: background-color 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #video-prev-button:hover, #video-next-button:hover,
+    #video-play-button:hover, #video-pause-button:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    #video-prev-button {
+      top: 50%;
+      transform: translateY(-50%);
+      left: 20px;
+    }
+
+    #video-next-button {
+      top: 50%;
+      transform: translateY(-50%);
+      right: 20px;
+    }
+
+    #video-play-pause-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex; /* To keep buttons together if needed */
+    }
+
+    #video-play-button, #video-pause-button {
+      /* Inherits shared styles from above */
+      margin: 0 5px; /* Spacing between play/pause buttons if both visible */
+    }
+
+    #video-prev-button svg, #video-next-button svg,
+    #video-play-button svg, #video-pause-button svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+      display: block;
+    }
+
+
+    /* --- Responsive Styles for Phone Devices --- */
+    @media (max-width: 768px) { /* Example breakpoint for phones */
+      #video-prev-button, #video-next-button,
+      #video-play-button, #video-pause-button {
+
+             padding: 5px;
+        font-size: 14px; /* Smaller font-size if using text */
+      }
+
+      #video-prev-button svg, #video-next-button svg,
+      #video-play-button svg, #video-pause-button svg {
+        width: 20px; /* Smaller SVG icons on phones */
+        height: 20px;
+      }
+    }
+
+
+    /* Fallback for browsers that don't support backdrop-filter */
+    @supports not (backdrop-filter: blur(10px)) and not (-webkit-backdrop-filter: blur(10px)) {
+      #video-prev-button, #video-next-button,
+      #video-play-button, #video-pause-button {
+        background-color: rgba(255, 255, 255, 0.5);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Function to load and play a background item (video or image)
+  const loadBackgroundItem = (backgroundIdentifier) => {
+    // Clear existing background content
+    backgroundContainer.innerHTML = '';
+    videoPlayer = null;
+    imageElement = null;
+    isVideoBackground = false; // Reset flag
+
+    const isImageURL = backgroundIdentifier.toLowerCase().endsWith('.jpg') || backgroundIdentifier.toLowerCase().endsWith('.jpeg') || backgroundIdentifier.toLowerCase().endsWith('.png') || backgroundIdentifier.toLowerCase().endsWith('.gif') || backgroundIdentifier.toLowerCase().endsWith('.webp');
+    const isPexelsURL = !isImageURL && (backgroundIdentifier.startsWith('http') || backgroundIdentifier.startsWith('//'));
+    const isYouTubeID = !isImageURL && !isPexelsURL;
+
+    if (isImageURL) {
+      createImageBackground(backgroundIdentifier);
+    } else if (isYouTubeID) {
+      if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        window.onYouTubeIframeAPIReady = () => {
+          createYouTubePlayer(backgroundIdentifier);
+        };
+      } else {
+        createYouTubePlayer(backgroundIdentifier);
+      }
+    } else if (isPexelsURL) {
+      createPexelsVideo(backgroundIdentifier);
+    } else {
+      console.error("videoBackground: Could not determine background type for:", backgroundIdentifier);
+    }
+  };
+
+  // Function to create YouTube player
+  const createYouTubePlayer = (videoId) => {
+    isVideoBackground = true;
+    videoPlayer = new YT.Player(backgroundContainer, {
+      height: '100%',
+      width: '100%',
+      videoId: videoId,
+      playerVars: {
+        'autoplay': 1,
+        'controls': 0,
+        'showinfo': 0,
+        'rel': 0,
+        'loop': 1,
+        'playlist': videoId
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  };
+
+  // Function to handle YouTube player ready event
+  function onPlayerReady(event) {
+    event.target.mute();
+    event.target.playVideo();
+    videoPlaying = true;
+    updatePlayPauseButtons();
+  }
+
+  // Function to handle YouTube player state change event
+  function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.PLAYING) {
+      videoPlaying = true;
+    } else if (event.data === YT.PlayerState.PAUSED) {
+      videoPlaying = false;
+    }
+    updatePlayPauseButtons();
+  }
+
+
+  // Function to create Pexels video player
+  const createPexelsVideo = (videoUrl) => {
+    isVideoBackground = true;
+    const videoElement = document.createElement('video');
+    videoElement.src = videoUrl;
+    videoElement.autoplay = true;
+    videoElement.loop = true;
+    videoElement.muted = true;
+    videoElement.playsInline = true;
+    backgroundContainer.appendChild(videoElement);
+    videoPlayer = videoElement;
+
+    videoPlayer.addEventListener('play', () => { videoPlaying = true; updatePlayPauseButtons(); });
+    videoPlayer.addEventListener('pause', () => { videoPlaying = false; updatePlayPauseButtons(); });
+    videoPlayer.addEventListener('loadeddata', () => { videoPlaying = true; updatePlayPauseButtons(); }); // Ensure initial state is correct
+
+    videoPlayer.onerror = function() {
+      console.error("videoBackground: Error loading Pexels video from URL:", videoUrl);
+    };
+  };
+
+  // Function to create Image background
+  const createImageBackground = (imageURL) => {
+    isVideoBackground = false;
+    imageElement = document.createElement('img');
+    imageElement.src = imageURL;
+    backgroundContainer.appendChild(imageElement);
+    updatePlayPauseButtons(); // Hide play/pause buttons for images
+  };
+
+
+  // Function to update play/pause button visibility based on videoPlaying state and background type
+  const updatePlayPauseButtons = () => {
+    if (isVideoBackground) {
+      if (videoPlaying) {
+        playButton.style.display = 'none';
+        pauseButton.style.display = 'flex'; // or 'block'
+      } else {
+        playButton.style.display = 'flex'; // or 'block'
+        pauseButton.style.display = 'none';
+      }
+    } else {
+      playButton.style.display = 'none';
+      pauseButton.style.display = 'none';
+    }
+  };
+
+
+  // Navigation button event listeners
+  prevButton.addEventListener('click', () => {
+    currentBackgroundIndex = (currentBackgroundIndex - 1 + backgroundItems.length) % backgroundItems.length;
+    localStorage.setItem('videoBackgroundIndex', currentBackgroundIndex);
+    loadBackgroundItem(backgroundItems[currentBackgroundIndex]);
+  });
+
+  nextButton.addEventListener('click', () => {
+    currentBackgroundIndex = (currentBackgroundIndex + 1) % backgroundItems.length;
+    localStorage.setItem('videoBackgroundIndex', currentBackgroundIndex);
+    loadBackgroundItem(backgroundItems[currentBackgroundIndex]);
+  });
+
+  // Play/Pause button event listeners
+  playButton.addEventListener('click', () => {
+    if (videoPlayer && isVideoBackground) {
+      if (videoPlayer.playVideo) { // YouTube
+        videoPlayer.playVideo();
+      } else if (videoPlayer.play) { // Pexels <video>
+        videoPlayer.play();
+      }
+      videoPlaying = true;
+      updatePlayPauseButtons();
+    }
+  });
+
+  pauseButton.addEventListener('click', () => {
+    if (videoPlayer && isVideoBackground) {
+      if (videoPlayer.pauseVideo) { // YouTube
+        videoPlayer.pauseVideo();
+      } else if (videoPlayer.pause) { // Pexels <video>
+        videoPlayer.pause();
+      }
+      videoPlaying = false;
+      updatePlayPauseButtons();
+    }
+  });
+
+
+  // Initial background load
+  loadBackgroundItem(backgroundItems[currentBackgroundIndex]);
+  updatePlayPauseButtons(); // Set initial button state
+}
+// --- Example Usage ---
+// Example videos array (replace with your actual video IDs and URLs)
+const myVideos = [
+    "https://mir-s3-cdn-cf.behance.net/project_modules/fs/c008ee89031725.5de839cf50def.jpg",
+    "https://videos.pexels.com/video-files/5338469/5338469-hd_1920_1080_30fps.mp4",
+    ,"https://mir-s3-cdn-cf.behance.net/project_modules/1400/30c6b689031725.5de839cf4e1cf.jpg",
+    "https://videos.pexels.com/video-files/29143109/12588467_2560_1440_24fps.mp4",
+    "https://mir-s3-cdn-cf.behance.net/project_modules/1400/4a0b3689031725.5de839cf4e904.jpg",
+    "https://videos.pexels.com/video-files/30710632/13139047_2560_1440_25fps.mp4",
+    "https://i.pinimg.com/originals/0b/7d/9a/0b7d9a1ebafd51ce886b8df87766dd13.jpg",
+    "https://videos.pexels.com/video-files/25649447/11903096_2560_1440_30fps.mp4",
+    "https://images.pexels.com/photos/2233416/pexels-photo-2233416.jpeg",
+    "https://videos.pexels.com/video-files/4169124/4169124-hd_1920_1080_25fps.mp4",
+    "https://videos.pexels.com/video-files/5076153/5076153-uhd_2560_1440_30fps.mp4",
+    "https://videos.pexels.com/video-files/4611808/4611808-uhd_2560_1440_25fps.mp4"
+    ,"https://videos.pexels.com/video-files/27332143/12119733_2560_1440_24fps.mp4",
+    "https://videos.pexels.com/video-files/5931840/5931840-uhd_2560_1440_24fps.mp4"    
+ ,"https://videos.pexels.com/video-files/855780/855780-hd_1920_1080_24fps.mp4",
+"https://videos.pexels.com/video-files/857134/857134-hd_1280_720_24fps.mp4"
+,"https://videos.pexels.com/video-files/1570919/1570919-hd_1920_1080_30fps.mp4" 
+,"https://videos.pexels.com/video-files/856885/856885-hd_1920_1080_30fps.mp4",
+"https://videos.pexels.com/video-files/855633/855633-hd_1920_1080_25fps.mp4",
+"https://videos.pexels.com/video-files/3816531/3816531-uhd_2560_1440_30fps.mp4",
+"https://videos.pexels.com/video-files/3542013/3542013-hd_1920_1080_24fps.mp4",
+"https://videos.pexels.com/video-files/3129752/3129752-uhd_2560_1440_30fps.mp4",
+,"https://videos.pexels.com/video-files/856973/856973-uhd_2560_1440_25fps.mp4"
+,"https://videos.pexels.com/video-files/855607/855607-hd_1920_1080_30fps.mp4"
+,"https://videos.pexels.com/video-files/856380/856380-hd_1920_1080_30fps.mp4"
+,"https://videos.pexels.com/video-files/1580455/1580455-hd_1920_1080_30fps.mp4"
+,"https://videos.pexels.com/video-files/4471213/4471213-uhd_2560_1440_30fps.mp4"
+,"https://videos.pexels.com/video-files/5209448/5209448-uhd_2560_1440_30fps.mp4"
+,"https://videos.pexels.com/video-files/2915051/2915051-uhd_2560_1440_25fps.mp4"
+,"https://videos.pexels.com/video-files/1851190/1851190-uhd_2560_1440_25fps.mp4"
+,"https://videos.pexels.com/video-files/3580080/3580080-hd_1920_1080_24fps.mp4"
+];
+
+// Call the function with your video array
+videoBackground(myVideos);
+
+
+// marker ====================================
+
+
+
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="./garden.js"> </script>
+
+
+
+</body>
+</html>
+

@@ -1,0 +1,1454 @@
+/* --- Font Faces --- */
+@font-face {
+    font-family: "Quran";
+    src: url("hafs.otf") format("truetype"); /* Replace with actual path */
+}
+
+
+
+
+
+:root {
+    /* Default Mode Colors (Dark Theme) */
+    --primary-color: #4CAF50; /*  Green */
+    --secondary-color: #8BC34A; /* Light Green */
+    --background-color: #2E3436; /* Dark Background */
+    --text-color: #FFFFFF; /* White Text */
+    --border-color: #555555; /* Dark Border */
+    --accent-color: #4CAF50; /* Green Accent */
+    --card-bg-color: #3F4749; /* Dark Card Background */
+    --tooltip-bg-color: #3F4749; /* Dark Tooltip Background */
+    --tooltip-border-color: #4CAF50; /* Green Tooltip Border */
+    --tooltip-text-color: #FFFFFF; /* White Tooltip Text (if needed, else remove) */
+}
+.playing-ayah {
+    background-color: rgba(72, 176, 70, 0.732); /* Example highlight color, change as needed */
+    /* You can add more styles like border, padding, etc. */
+}
+
+.aya-marked {
+    background-image: linear-gradient(to bottom, #00ff5149, #00ff044f); /* Yellow gradient */
+    border: 1px solid #daa520; /* Optional: Highlight border */
+  }
+
+  .hasanat-popup {
+    position: absolute;
+    top: -30px; /* Adjust as needed to position above the aya */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 249, 4, 0.506); /* White with transparency */
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    pointer-events: none; /* Make it non-interactive */
+    opacity: 1;
+    transition: opacity 1s, transform 1s; /* Fade and move up animation */
+    z-index: 10; /* Ensure it's above other elements */
+}
+
+.hasanat-popup.fade-out {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-15px); /* Move up further while fading */
+}
+.header {
+
+background-color: #333;
+color: white;
+padding: 0.5rem 1rem; /* Reduced header padding */
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+.header-title {
+font-size: 1.2rem; /* Reduced title font size */
+margin: 0;
+}
+
+.header-controls {
+display: flex;
+align-items: center;
+gap: 5px; /* Reduced gap between header controls */
+}
+
+.header-button {
+background: none;
+color: white;
+border: none;
+cursor: pointer;
+padding: 0.3rem; /* Reduced button padding */
+border-radius: 0.25rem;
+transition: background-color 0.3s ease;
+font-size: 0.9rem; /* Reduced font size for text buttons if any */
+}
+
+.header-button:hover, .header-button:focus {
+background-color: rgba(255, 255, 255, 0.1);
+outline: none;
+}
+
+.header-button svg {
+width: 18px; /* Slightly smaller SVG icons */
+height: 18px;
+fill: white;
+display: block;
+}
+
+/* Nested Dropdown Menu Styles */
+.dropdown {
+position: relative;
+display: inline-block;
+}
+
+.dropdown-button {
+@extend .header-button; /* Reuse header button styles */
+}
+
+.dropdown-content {
+display: none;
+position: absolute;
+background-color: #f9f9f9;
+min-width: 160px; /* Adjust as needed */
+box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+z-index: 1;
+right: 0; /* Adjust for RTL if needed */
+left: auto; /* Adjust for RTL if needed */
+padding: 10px;
+border-radius: 5px;
+text-align: right; /* For Arabic text alignment */
+}
+
+.dropdown-content.show {
+display: block;
+}
+/* Islamic Style Modal - Green Gradient - No Animation */
+#soraModal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.6); /* Dark overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    backdrop-filter: blur(10px); /* Glassmorphism blur effect */
+}
+
+.modal-content {
+    background: rgba(0, 0, 0, 0.4); /* Semi-transparent dark background */
+    border-radius: 20px;
+    padding: 30px;
+    width: 60%;
+    max-width: 500px;
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: none;
+    width: 90%;
+    max-width: none;
+    height: auto;
+    max-height: 90%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background-image: url('https://www.transparentpng.com/download/pattern/p3NBVZ-data-security-and-privacy-software-services-safe-data.png');
+    background-repeat: repeat;
+    background-size: 350px;
+}
+
+
+
+
+.sora-grid {
+display: flex;
+overflow-x: auto;
+gap: 1rem;
+margin-top: 75px;
+
+-webkit-overflow-scrolling: touch;
+cursor: grab;
+}
+
+.sora-row {
+display: flex;
+flex-direction: row;
+justify-content: flex-start;
+align-items: center;
+overflow-x: auto;
+overflow-y: hidden;
+white-space: nowrap;
+
+-webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+-ms-overflow-style: none;
+cursor: grab;
+}
+
+.sora-row::-webkit-scrollbar {
+display: none;
+}
+
+.sora-card {
+    opacity: 95%;
+    background: rgba(255, 255, 255, 0.038);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    padding: 1rem;
+    text-align: center;
+    width: 80px;
+    height: 110px;
+    flex: 0 0 auto;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 10px;
+    user-select: none;
+    overflow: hidden;
+}
+
+
+
+.sora-card:hover {
+transform: scale(1.05);
+opacity: 100%;
+}
+
+.sora-title {
+    color: #ffffff;
+font-size: 1rem; /* Reduced sora title size */
+margin-top: 0;
+overflow: hidden;         /* Clip overflowing text */
+text-overflow: ellipsis;  /* Indicate overflow with an ellipsis */
+white-space: nowrap;     /* Prevent text from wrapping */
+}
+
+.sora-card-number {
+    font-size: 1em;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: center;
+}
+
+.sora-card-title {
+    font-family: quran;
+    font-size: 1em;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: center;
+    margin-top: 5px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7),
+                 -1px -1px 3px rgba(0, 0, 0, 0.5),
+                 0 0 8px rgba(255, 255, 255, 0.3);
+    -webkit-text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7),
+                        -1px -1px 3px rgba(0, 0, 0, 0.5),
+                        0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+
+.aya-container {
+margin-top: 1rem;
+text-align: right;
+line-height: 1.8;
+}
+
+.aya {
+display: block;
+padding: 0.2rem 0;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+.menu {
+    width: 100%;
+    left: -100%;
+    top: 3.5rem; /* Adjusted based on header height */
+    height: calc(100vh - 3.5rem); /* Adjusted based on header height */
+}
+.sora-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Further reduced min-width for smaller screens */
+    height: auto;
+    margin-top: -50px;
+
+}
+.header-title {
+   text-align: center;
+    width: 70%;
+}
+.header {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem; /* Reduced header padding on mobile */
+}
+
+.header-title {
+    margin-bottom: 0.2rem; /* Reduced margin below title on mobile */
+    font-size: 1.1rem; /* Slightly smaller title on mobile */
+}
+.header-controls {
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+}
+.header-button, .dropdown-button {
+    padding: 0.2rem; /* Even smaller button padding on mobile */
+}
+.header-button svg, .dropdown-button svg {
+    width: 16px; /* Even smaller icons on mobile */
+    height: 16px;
+}
+.dropdown-content {
+    min-width: auto; /* Adjust dropdown width on mobile */
+    width: 90%; /* Make dropdown wider on mobile */
+    max-width: 300px; /* Maximum width for dropdown on mobile */
+    right: 5%; /* Adjust dropdown position on mobile */
+    left: auto; /* Adjust dropdown position on mobile */
+}
+.dropdown-content input[type="text"],
+.dropdown-content input[type="number"],
+.dropdown-content button {
+    font-size: 0.9rem; /* Slightly smaller font in dropdown on mobile */
+}
+}
+
+
+
+
+
+#results {
+ padding: 10px;
+margin-top: 10px;
+border: 1px solid #ccc;
+border-radius: 5px;
+background-color: #fff; /* or another background to stand out */
+text-align: right; /* for right-to-left languages */
+}
+.dark-mode #results {
+background-color: #444;
+color: #eee;
+border-color: #555;
+}
+
+.fixed {
+position: fixed;
+top: 0;
+right: 0;
+left: 0;
+z-index: 100;
+}
+.flex {
+display: flex;
+}
+.items-center {
+align-items: center;
+}
+.justify-between {
+justify-content: space-between;
+}
+.p-2 {
+padding: 0.5rem;
+}
+.rounded {
+border-radius: 0.25rem;
+}
+.focus:outline-none {
+outline: none;
+}
+.focus:ring-2 {
+--tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+--tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+.focus:ring-white {
+--tw-ring-color: #ffffff;
+--tw-ring-offset-color: #fff;
+}
+.text-white {
+color: #ffffff;
+}
+.hover:bg-purple-700:hover {
+background-color: #7b2cbf;
+}
+.transition {
+transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+transition-duration: 200ms;
+}
+.duration-200 {
+transition-duration: 200ms;
+}
+.hidden {
+display: none !important;
+}
+
+/* Modal Styles */
+.modal {
+display: none;
+position: fixed;
+z-index: 1000;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+overflow: auto;
+background-color: rgba(0,0,0,0.4);
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+
+
+.close-button {
+color: #aaa;
+float: right;
+font-size: 28px;
+font-weight: bold;
+position: absolute; /* Keep absolute positioning, relative to modal-content */
+top: 10px;
+right: 15px;
+}
+
+.close-button:hover,
+.close-button:focus {
+color: black;
+text-decoration: none;
+cursor: pointer;
+}
+
+/* Reader Mode Styles (from original code - keep if needed) */
+
+
+
+.sora-card.expanded {
+grid-column: 1 / -1 !important;
+width: auto !important;
+height: auto !important;
+overflow: visible !important;
+display: block !important;
+margin-left: auto;
+margin-right: auto;
+max-width: 95%;
+}
+
+.sora-card.expanded .sora-subtitle,
+.sora-card.expanded .sora-details,
+.sora-card.expanded .sora-actions,
+.sora-card.expanded .aya-container,
+.sora-card.expanded .basmala {
+display: block !important;
+}
+
+.sora-card:not(.expanded) .sora-subtitle,
+.sora-card:not(.expanded) .sora-details,
+.sora-card:not(.expanded) .sora-actions,
+.sora-card:not(.expanded) .aya-container,
+.sora-card:not(.expanded) .basmala {
+display: none !important;
+}
+
+.hidden-in-expand {
+display: none !important;
+}
+
+/* Tooltip basic styles */
+.tooltip {
+position: absolute;
+background-color: rgba(0, 0, 0, 0.8);
+color: white;
+padding: 5px 10px;
+border-radius: 4px;
+z-index: 1020;
+display: none;
+white-space: nowrap;
+pointer-events: none;
+ font-family: 'Arial', sans-serif;
+
+}
+
+.tooltip.active {
+display: block;
+}
+
+/* Style for icons inside the tooltip */
+.tooltip-icon {
+margin: 0 5px;
+cursor: pointer;
+font-size: 18px;
+
+}
+
+.tooltip-close {
+position: absolute;
+top: 5px;
+right: 5px;
+color: white;
+cursor: pointer;
+font-size: 16px;
+}
+
+.tooltip-close:hover {
+color: #ccc;
+}
+
+/* Style for the Tafsir iframe */
+.tafsir-iframe {
+width: 500px;
+height: 300px;
+border: none;
+position: absolute;
+z-index: 1010;
+display: none;
+box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.tooltip-icon:hover {
+transform: scale(1.2);
+transition: transform 0.2s ease-in-out;
+}
+
+/* Toast Styles */
+#toast {
+visibility: hidden;
+min-width: 250px;
+margin-left: -125px;
+background-color: #333;
+color: #fff;
+text-align: center;
+border-radius: 2px;
+padding: 16px;
+position: fixed;
+z-index: 1;
+left: 50%;
+bottom: 30px;
+font-size: 17px;
+}
+
+#toast.show {
+visibility: visible;
+-webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@-webkit-keyframes fadein {
+from {bottom: 0; opacity: 0;}
+to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+from {bottom: 0; opacity: 0;}
+to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+from {bottom: 30px; opacity: 1;}
+to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+from {bottom: 30px; opacity: 1;}
+to {bottom: 0; opacity: 0;}
+}
+.grabbing {
+cursor: grabbing;
+}
+/* stop */
+
+html {
+    direction: rtl;
+    scroll-behavior: smooth;
+}
+
+body {
+
+    background-image: url('https://img.freepik.com/free-vector/flat-arabic-pattern-background_79603-1826.jpg');
+    background-repeat: repeat;
+    background-size: 620px;
+    font-family: 'Raleway', 'Kufyan Arabic', sans-serif; /* Use Raleway as the primary font */
+    background-color: var(--background-color);
+    color: white;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease;
+}
+
+/* --- Utility Classes --- */
+.hidden { display: none; }
+.flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-col { flex-direction: column; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.text-center { text-align: center; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.m-2 { margin: 0.5rem; }
+.m-4 { margin: 1rem; }
+.mx-2 { margin-left: 0.5rem; margin-right: 0.5rem; }
+.my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+.p-2 { padding: 0.5rem; }
+.p-4 { padding: 1rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.rounded { border-radius: 8px; }
+.rounded-full { border-radius: 9999px; }
+.shadow-subtle { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+.shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+.shadow-lg { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); }
+.shadow-xl { box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); } /*  Even larger shadow */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.z-50 { z-index: 50; }
+.z-1000 { z-index: 1000; }
+.z-1001 { z-index: 1001; }
+.cursor-pointer { cursor: pointer; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.overflow-hidden { overflow: hidden; }
+.overflow-y-auto { overflow-y: auto; }
+.overflow-x-auto { overflow-x: auto; }
+.uppercase { text-transform: uppercase; }
+.font-bold { font-weight: bold; }
+.select-none { user-select: none; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.transition-all { transition: all 0.3s ease; } /*  Smooth transitions for everything */
+
+
+
+  /* ---  Aya Styles (Corrected) --- */
+.aya-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.aya {
+    font-family: Quran;
+    font-size: 1.4rem;
+    color: white;
+    margin: 0.3rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.8;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+}
+
+.aya:hover {
+    background-color: var(--accent-color);
+    color: white;
+    transform: scale(1.05);
+}
+
+/*  CORRECTED NUMBERING STYLES */
+.aya-container {  /*  Apply counter-reset to the *container* */
+    counter-reset: line; /* Initialize the 'line' counter */
+}
+
+.aya::before {
+    content: "(" counter(line) ")";
+    counter-increment: line;
+    background-color: #4caf507d;
+    border-radius: 50%;
+    /* padding: 0.3rem 0.7rem; */
+    margin: 0 0.6rem;
+    font-weight: bold;
+    min-width: 32px;
+    height: 33px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.aya:hover::before {
+    transform: scale(1.2);
+    background-color: var(--primary-color);
+    color: white;
+}
+
+      /* --- Basmala --- */
+.basmala {
+    font-family: Quran;
+    font-size: 1.5rem;  /*  Larger font size */
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 1.5rem;  /* More space */
+    padding: 0.75rem;  /* More padding */
+    border-radius: 12px; /*  More rounded */
+    width: 100%;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /*  Subtle text shadow */
+}
+
+
+/* --- Action Buttons within Sora Card --- */
+.sora-actions {
+    display: none; /* Initially hidden */
+        /* ... rest of your styles ... */
+
+}
+
+    .sora-card.expanded .sora-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem; /* More space */
+}
+
+
+.action-button {
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color); /* Thicker border */
+    border-radius: 12px; /* More rounded */
+    padding: 0.6rem 1.2rem;  /*  Adjusted padding */
+    font-size: 1.1rem;  /*  Slightly larger font */
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease; /* Smoother */
+    margin: 0.3rem;  /* Adjusted margin */
+}
+
+.action-button:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-3px); /* More lift */
+    box-shadow: 0 5px 10px rgba(76, 175, 80, 0.4);  /*  Stronger shadow */
+}
+
+/* --- Copy Button --- */
+    .copy-button {
+        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); /* Gradient */
+    color: white;
+    padding: 0.5rem 0.8rem;  /* Adjusted padding */
+    font-size: 1rem;   /* Slightly larger font */
+    border: none;
+    border-radius: 8px;  /*  More rounded */
+    cursor: pointer;
+    box-shadow: 0 3px 7px rgba(76, 175, 80, 0.3); /* Adjusted shadow */
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px; /* Adjusted height */
+    width: 32px;  /*  Square button */
+    margin-left: 0.6rem; /* Adjusted space */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smoother */
+}
+
+.copy-button:hover {
+        transform: scale(1.2); /* Larger on hover */
+        box-shadow: 0 5px 12px rgba(76, 175, 80, 0.4); /* Stronger shadow */
+}
+
+/* --- Tooltip --- */
+.tooltip {
+    position: fixed;
+    background-color: var(--tooltip-bg-color);
+    border: 2px solid var(--tooltip-border-color); /*  Thicker border */
+    border-radius: 12px; /*  More rounded */
+    padding: 1.2rem;  /* More padding */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+    z-index: 1001;
+    display: none;
+    max-width: 80%;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateY(-15px); /* More offset */
+    pointer-events: none;
+}
+.tooltip.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.tooltip-close {
+        position: absolute;
+        top: 0.7rem;   /* Adjusted position */
+        right: 0.7rem;  /* Adjusted position */
+        cursor: pointer;
+        font-size: 1.4rem; /* Larger icon */
+        color: #777;
+        background: none;
+        border: none;
+        padding: 0;
+        transition: color 0.3s ease, transform 0.2s ease;  /* Smoother & transform */
+}
+
+.tooltip-close:hover {
+        color: var(--primary-color);
+        transform: scale(1.2); /*  Slightly larger */
+}
+    .tooltip iframe {
+    width: 100%;
+    height: 350px;  /*  Slightly taller */
+    border: none;
+    border-radius: 8px; /*  More rounded */
+}
+
+
+
+
+
+/* --- Search and Controls --- */
+.search-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem; /*  More gap */
+        margin-bottom: 1.5rem;  /* More space */
+
+}
+
+.search-box {
+    flex: 1;
+    max-width: 350px; /* Wider */
+    padding: 0.6rem;  /*  Adjusted padding */
+    border: 2px solid var(--border-color); /* Thicker border */
+    border-radius: 6px;  /*  Slightly more rounded */
+    font-size: 1.1rem; /* Slightly larger font */
+    margin: 0.3rem;   /* Adjusted margin */
+}
+.search-button {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.6rem 1.2rem; /*  Adjusted padding */
+        font-size: 1.1rem;     /* Slightly larger font */
+        border: none;
+        border-radius: 6px;  /*  Slightly more rounded */
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease; /*  Smoother */
+}
+.search-button:hover{
+        background-color: var(--secondary-color); /*  Lighter on hover */
+        transform: scale(1.05); /*  Slight scale */
+}
+
+.control-button {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.6rem 1.2rem;  /*  Adjusted padding */
+    font-size: 1.1rem;   /* Slightly larger font */
+    border: none;
+    border-radius: 6px;   /*  Slightly more rounded */
+    cursor: pointer;
+    margin: 0.3rem;  /* Adjusted margin */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Smoother */
+}
+.control-button:hover{
+    background-color:  var(--primary-color); /*  Darker on hover */
+    transform: scale(1.05); /* Slight scale */
+}
+
+
+.font-control, .goto-control {
+        display: flex;
+    align-items: center;
+    gap: 0.8rem;  /* More gap */
+    margin: 0.75rem 0; /* Adjusted margin */
+}
+
+
+.font-control button, .goto-control button {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.5rem 1rem; /* Adjusted padding */
+    font-size: 1.1rem;   /*  Slightly larger font */
+    border: none;
+    border-radius: 6px;  /* Slightly more rounded */
+    cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;  /* Smoother */
+}
+    .font-control button:hover, .goto-control button:hover{
+    background-color:  var(--primary-color);
+    transform: scale(1.05); /* Slight scale */
+
+}
+.goto-control input[type="number"] {
+    width: 70px;    /* Adjusted width */
+    padding: 0.5rem;  /* Adjusted padding */
+    text-align: center;
+    border: 2px solid var(--border-color); /* Thicker border */
+    border-radius: 6px;    /* Slightly more rounded */
+        font-size: 1rem;
+}
+
+
+    /* --- Search Results --- */
+#results {
+    max-height: 250px;  /* Further Increased max height */
+    overflow-y: auto;
+    padding: 1.2rem;  /* More padding */
+    margin-top: 0.8rem; /*  More space */
+    background-color: var(--card-bg-color);
+    border: 2px solid var(--border-color); /* Thicker border */
+    border-radius: 12px;  /* More rounded */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /*  Subtle shadow */
+}
+
+#results::-webkit-scrollbar {
+    width: 10px;  /*  Slightly wider scrollbar */
+}
+
+#results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 12px;  /* More rounded */
+}
+#results::-webkit-scrollbar-thumb {
+        background: #888; /*  Default thumb color */
+        border-radius: 12px;  /* More rounded */
+        border: 2px solid #f1f1f1; /*  Adds a border */
+}
+
+#results::-webkit-scrollbar-thumb:hover {
+    background: #555; /*  Darker on hover */
+}
+.result-item {
+    padding: 0.7rem;  /* More padding */
+    font-size: 1.1rem; /* Slightly larger font */
+    border-bottom: 2px solid var(--border-color); /* Thicker border */
+    font-family: Quran;
+    transition: background-color 0.3s ease, transform 0.2s ease;  /* Smoother */
+        line-height: 1.6; /*  Improved readability */
+}
+
+.result-item:hover {
+    background-color: var(--accent-color);
+        transform: translateX(5px);  /* Slight shift */
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+    .highlight {
+    background-color: #FFF59D;  /* Softer yellow */
+    font-weight: bold;
+    padding: 0.2rem 0.3rem;   /* Adjusted padding */
+    border-radius: 4px;  /*  Slightly more rounded */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Subtle shadow */
+}
+
+/* --- Sora Details --- */
+    .sora-details {
+    display: none;
+}
+
+    .sora-card.expanded .sora-details {
+    display: block;
+    margin-top: 1.5rem; /*  More space */
+    padding: 1.2rem;  /*  More padding */
+    border-top: 2px solid var(--border-color);  /*  Thicker border */
+    border-radius: 12px; /* More rounded */
+    font-size: 1rem;   /*  Slightly larger font */
+    color: #555;   /* Darker text */
+    background-color: #F5F5F5; /*  Lighter background */
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); /*  Inner shadow */
+    }
+
+.sora-card.expanded  .aya-container{
+    display: flex;
+}
+.sora-card.expanded .basmala{
+    display: block;
+}
+
+
+/* --- Hasanat Icon --- */
+.hasanat-icon {
+position: absolute;
+top: 0.7rem;  /*  Adjusted position */
+left: 0.7rem;   /* Adjusted position */
+font-size: 1.4rem; /* Larger icon */
+color: var(--primary-color);
+cursor: pointer;
+z-index: 2;
+transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.hasanat-icon:hover {
+transform: scale(1.2);  /* Larger */
+color: var(--secondary-color);
+}
+
+/* --- Media Queries --- */
+/* Adjustments for smaller screens */
+@media (max-width: 768px) {
+.sora-grid {
+grid-template-columns: repeat(2, 1fr);
+
+}
+.menu {
+width: 100%; /* Full width on mobile */
+transform: translateX(-100%);
+z-index: 1000;
+}
+.sora-card.expanded {
+width: 95%; /*  Almost full width */
+}
+.header-controls {
+ flex-direction: column;  /* Stack on smaller screens */
+ align-items: flex-start;   /* Align to start */
+}
+.search-controls{
+flex-direction: column;
+align-items: stretch; /* Stretch items to full width */
+}
+.search-box{
+max-width: none;  /* Allow full width */
+width: 100%;
+}
+.modal-content{
+width: 100%; /* Almost full width on mobile */
+margin: 5% auto; /*  Adjust margin */
+}
+
+}
+
+@media (max-width: 480px) {  /*  Even smaller screens */
+.sora-grid {
+grid-template-columns: 1fr; /*  1 column on very small screens */
+transform: translateY(85%);
+position: relative;
+}
+}
+
+
+/* --- Other Styles --- */
+.switch {
+position: relative;
+display: inline-block;
+width: 65px;   /*  Slightly wider */
+height: 38px;  /*  Slightly taller */
+margin: 0.5rem;
+}
+
+.switch input {
+opacity: 0;
+width: 0;
+height: 0;
+}
+.slider {
+position: absolute;
+cursor: pointer;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background-color: #ccc;
+transition: .4s;
+border-radius: 38px;  /*  Match height */
+}
+.slider:before {
+position: absolute;
+content: "";
+height: 30px;   /*  Slightly larger knob */
+width: 30px;    /*  Slightly larger knob */
+left: 4px;
+bottom: 4px;
+background-color: white;
+transition: .4s;
+border-radius: 50%;
+}
+
+input:checked + .slider {
+background-color: var(--primary-color);
+}
+input:checked + .slider:before {
+transform: translateX(27px);  /*  Adjust based on width/height */
+}
+#divCopyButtons{
+width: 97%;
+}
+
+/* --- Custom Scrollbar --- */
+/* (Optional, for a consistent look across browsers) */
+::-webkit-scrollbar {
+width: 12px; /*  Wider scrollbar */
+}
+
+::-webkit-scrollbar-track {
+background: var(--card-bg-color); /* Changed to dark card background */
+border-radius: 15px;
+}
+
+::-webkit-scrollbar-thumb {
+background: #555;  /* Default thumb color */
+border-radius: 15px;
+border: 3px solid var(--card-bg-color); /* Changed to dark card background */
+}
+
+::-webkit-scrollbar-thumb:hover {
+background: #888;  /*  Darker on hover */
+}
+
+
+
+.reader-modal-content {
+    width: 90%; /* Adjust width as needed */
+    height:70%;
+    /* max-width: 700px; */
+    backdrop-filter: blur(10px);
+    padding: 20px;
+}
+
+.reader-controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.reader-controls button {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.reader-text-display {
+    border: 1px solid #ccc;
+    padding: 20px;
+    min-height: 150px; /* Minimum height for display area */
+    text-align: center;
+    font-size: 58px; /* Default font size */
+    font-family: 'Quran', sans-serif; /* Use your Quran font */
+    overflow-y: auto; /* For long texts */
+}
+
+.reader-text-display span.current-word {
+    background-color: rgba(55, 55, 51, 0.219); /* Highlight current word */
+    padding: 0 5px;
+    border-radius: 5px;
+}
+
+.reader-hasanat-display {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}
+/* Modal Close Button Style (if not already defined) */
+.close-button {
+    color: #aaa;
+    float: left; /* Changed to left to be in top left for Arabic */
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+/* modal of charity */
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.treasure-button {
+    background-image: linear-gradient(45deg, #FFA500, #FF8C00);
+    background-size: 200% 200%;
+    animation: gradientShift 3s linear infinite;
+}
+#treasureModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 200px;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1003;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+#treasureModalContent {
+    position: relative;
+    border-radius: 20px;
+    color: white;
+    text-align: center;
+    width: 95%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-image: linear-gradient(45deg, #ffa6007f, #ff8c0072);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 24px 96px 0 rgba(0, 0, 0, 0.7); /* Strong shadow */
+    font-family: 'Arial', sans-serif;
+}
+
+.money-rectangle {
+    position: absolute;
+    top: -88px;
+    left: 1px;
+    /* transform: none; */
+     background-color: linear-gradient(45deg, #ffa60056, #ff8c0063);
+    backdrop-filter: blur(14px);
+    border-radius: 20px 0 25px 0;
+    padding: 18px 35px;
+    /* border: 3px solid rgba(255, 255, 255, 0.2); */
+    color: white;
+    font-size: 1.4em;
+    z-index: 0;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+#moneyDisplay {
+    background: linear-gradient(to right, #FFFFF0, #FFD700);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 200%;
+    animation: textGradientAnimation 7s linear infinite;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.4);
+}
+
+
+.holographic-glass {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    z-index: -1;
+    /* More colorful and vibrant holographic gradient */
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.4), rgba(0, 255, 255, 0.4), rgba(255, 255, 0, 0.4), rgba(0, 255, 0, 0.4), rgba(255, 0, 255, 0.4));
+    background-size: 700% 700%; /* Even larger background size for animation */
+    animation: holographicShift 35s linear infinite;
+    backdrop-filter: blur(40px) saturate(220%); /* Even more blur and saturation */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); /* Added subtle white glow */
+}
+
+@keyframes holographicShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes textGradientAnimation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+
+.modal-main-text, .milestone-marker-name {
+    background: linear-gradient(to right, #FFFFF0, #FFD700);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 200%;
+    animation: textGradientAnimation 7s linear infinite;
+    font-weight: 900;
+    font-size: 1.4em; /* Reduced font-size */
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
+    margin-bottom: 40px;
+    line-height: 2.0;
+    letter-spacing: 1px;
+}
+
+
+.modal-artifact-emoji {
+    position: absolute;
+    font-size: 2.8em; /* Reduced emoji size */
+    opacity: 0.2;
+    pointer-events: none;
+    user-select: none;
+    z-index: -2;
+}
+
+.milestone-progress-container {
+    width: 100%;
+    margin-bottom: 50px; /* Reduced margin */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative;
+    padding-top: 80px;
+}
+
+
+.milestone-progress-bar {
+    height: 14px; /* Reduced height */
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 25px; /* Reduced margin */
+}
+
+.milestone-progress-bar-line {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    background-image: linear-gradient(to right, #FFFFF0, #FFD700);
+    border-radius: 7px;
+    transition: width 0.8s ease-out;
+}
+
+
+.milestone-markers-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    height: 80px;
+}
+
+
+.milestone-marker {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px; /* Reduced margin */
+}
+
+.milestone-marker-thumbnail {
+    width: 50px;      /* Reduced thumbnail size */
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+
+.milestone-marker-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.milestone-marker-name {
+    font-size: 0.9em;   /* Reduced font-size */
+    color: #eee;
+    text-align: center;
+    white-space: nowrap;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+
+.modal-main-text {
+    font-size: 1.3em; /* Reduced font-size */
+    color: #ddd;
+    line-height: 1.8;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
+}
+
+.support-images-container {
+    display: flex;
+    gap: 30px; /* Reduced gap */
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.support-image {
+    height: 50px; /* Reduced image height */
+    transition: transform 0.2s ease;
+}
+
+.support-image:hover {
+    transform: scale(1.1);
+}
+
+.close-modal-button {
+    margin-top: 30px; /* Reduced margin-top */
+    padding: 12px 25px; /* Reduced padding */
+    border-radius: 10px;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.25);
+    color: white;
+    cursor: pointer;
+    font-size: 1em; /* Reduced font-size */
+    transition: background-color 0.2s ease;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    font-weight: bold;
+}
+
+.close-modal-button:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* --- Media Query for Mobile Friendliness --- */
+@media screen and (max-width: 768px) {
+    #treasureModalContent {
+        padding-bottom: 40px;
+        width: 95%;
+    }
+
+    .money-rectangle {
+        font-size: 1em;
+        padding: 12px 20px;
+        top: -60px;
+        border-radius: 12px 0 18px 0;
+    }
+
+    #moneyDisplay {
+         font-size: 0.9em;
+    }
+
+    .modal-main-text, .milestone-marker-name {
+        font-size: 1.1em;
+    }
+
+    .modal-artifact-emoji {
+        font-size: 2.5em;
+    }
+
+    .support-images-container {
+        gap: 15px;
+    }
+
+    .support-image {
+        height: 40px;
+    }
+
+    .close-modal-button {
+        font-size: 1em;
+        padding: 10px 20px;
+    }
+}
