@@ -246,60 +246,53 @@
 
 
             let isDragging = false; // Local dragging flag for each card
-let lastClickTime = 0; // Timestamp of the last click/tap
-const doubleClickThreshold = 300; // Time in milliseconds to consider a double click/tap
 
-function handleSoraCardClick(sora, event) {
-    if (!isDragging) {
-        // Check if the click target or its parent is the action-button
-        if (event.target.closest('.action-button')) {
-            event.stopPropagation(); // Prevent the soraCard click
-            // openReaderModeModal(sora.index); // Your reader mode logic here
-        } else {
-            const currentTime = new Date().getTime();
-            const timeDiff = currentTime - lastClickTime;
+            soraCard.addEventListener('mousedown', () => {
+                isDragging = false; // Reset flag on mousedown
+            });
 
-            if (timeDiff < doubleClickThreshold) {
-                // Double click/tap detected
-                console.log("Double Click/Tap - Opening Modal (Sora):", sora); // Replace with your double-click action
-                openSoraModal(sora); // Open modal on double click/tap
-                lastClickTime = 0; // Reset lastClickTime to prevent immediate single click action
-            } else {
-                // Single click/tap detected (or first click of a potential double click)
-                console.log("Single Click/Tap - Opening Modal (Sora):", sora); // Replace with your single-click action
-                openSoraModal(sora); // Open modal on single click/tap
-                lastClickTime = currentTime; // Update lastClickTime for double click detection
-            }
-        }
-    }
-    isDragging = false; // Reset flag after mouseup/touchend
-}
+            soraCard.addEventListener('mousemove', () => {
+                isDragging = true; // Set flag if mouse moves after mousedown
+            });
+
+            soraCard.addEventListener('mouseup', (event) => {
+                if (!isDragging) {
+                    // Check if the click target or its parent is the readerModeIcon
+                    if (event.target.closest('.action-button')) {
+                        event.stopPropagation(); // Prevent the soraCard click
+                        // openReaderModeModal(sora.index);
+                    } else {
+                        // Handle the soraCard click (open modal) only if not dragging
+                        openSoraModal(sora);
+                    }
+                }
+                isDragging = false; // Reset flag after mouseup
+            });
 
 
-soraCard.addEventListener('mousedown', () => {
-    isDragging = false;
-});
 
-soraCard.addEventListener('mousemove', () => {
-    isDragging = true;
-});
+            soraCard.addEventListener('touchstart', () => {
+                isDragging = false; // Reset flag on touchstart
+            });
 
-soraCard.addEventListener('mouseup', (event) => {
-    handleSoraCardClick(sora, event);
-});
+            soraCard.addEventListener('touchmove', () => {
+                isDragging = true; // Set flag if touch moves after touchstart
+            });
 
+            soraCard.addEventListener('touchend', (event) => {
+                if (!isDragging) {
+                    // Check if the click target or its parent is the readerModeIcon
+                    if (event.target.closest('.action-button')) {
+                        event.stopPropagation(); // Prevent the soraCard click
+                        // openReaderModeModal(sora.index);
+                    } else {
+                        // Handle the soraCard click (open modal) only if not dragging
+                        openSoraModal(sora);
+                    }
+                }
+                isDragging = false; // Reset flag after touchend
+            });
 
-soraCard.addEventListener('touchstart', () => {
-    isDragging = false;
-});
-
-soraCard.addEventListener('touchmove', () => {
-    isDragging = true;
-});
-
-soraCard.addEventListener('touchend', (event) => {
-    handleSoraCardClick(sora, event);
-});
        
 //AHMED
 const actionButton = document.createElement('div');
@@ -324,9 +317,9 @@ const bubbleButtons = [
         gradient: 'linear-gradient(to right, #ff6a00, #ee0979)'
     },
     {
-        icon: 'fa-star',
-        title: 'المفضلة',
-        callback: () => toggleFavorite(sora.index),
+        icon: 'fa-book-quran',
+        title: 'افتح السوره',
+        callback: () => openSoraModal(sora),
         gradient: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)'
     }
 ];
@@ -1682,29 +1675,91 @@ return icon;
 
 }
 
+
 function showTafsir(soraId, ayaId, mouseX, mouseY) {
-const tafsirUrl = `https://altafsir.com/Tafasir.asp?tMadhNo=0&tTafsirNo=73&tSoraNo=${soraId}&tAyahNo=${ayaId}&tDisplay=yes&UserProfile=0&LanguageId=1`;
+    hideTooltip();
 
-let tafsirIframe = document.getElementById("tafsirIframe");
-if (!tafsirIframe) {
-    tafsirIframe = document.createElement("iframe");
-    tafsirIframe.id = "tafsirIframe";
-    tafsirIframe.className = "tafsir-iframe";
-    document.body.appendChild(tafsirIframe);
-}
+    const tafsirUrl = `https://www.altafsir.com/Tafasir.asp?tMadhNo=10&tTafsirNo=66&tSoraNo=${soraId}&tAyahNo=${ayaId}&tDisplay=yes&UserProfile=0&LanguageId=1`;
 
-tafsirIframe.src = tafsirUrl;
- // Adjust position to avoid being cut off at the edge of the window
-const iframeWidth = 500;  // Match the CSS width
-const iframeHeight = 300; // Match the CSS height
-const posX = (mouseX + iframeWidth > window.innerWidth) ? window.innerWidth - iframeWidth - 20 : mouseX; // 20px margin
-const posY = (mouseY + iframeHeight > window.innerHeight) ? window.innerHeight - iframeHeight - 20 : mouseY;
+    let tafsirIframe = document.getElementById("tafsirIframe");
+    if (!tafsirIframe) {
+        tafsirIframe = document.createElement("iframe");
+        tafsirIframe.id = "tafsirIframe";
+        tafsirIframe.className = "tafsir-iframe";
+        document.body.appendChild(tafsirIframe);
+    }
 
-tafsirIframe.style.left = `${posX}px`;
-tafsirIframe.style.top = `${posY}px`;
-tafsirIframe.style.display = "block";
+    tafsirIframe.src = tafsirUrl;
 
+    // Check if device is mobile
+    const isMobile = window.innerWidth <= 768;
 
+    if (isMobile) {
+        // For mobile, make iframe full screen with margins
+        tafsirIframe.style.width = '90vw';
+        tafsirIframe.style.height = '80vh';
+        tafsirIframe.style.left = '5vw'; // Center horizontally
+        tafsirIframe.style.top = '10vh'; // Some space from top
+        tafsirIframe.style.position = 'fixed';
+    } else {
+        // Desktop behavior remains the same
+        const iframeWidth = 450;
+        const iframeHeight = 200;
+        const posX = (mouseX + iframeWidth > window.innerWidth) ?
+            window.innerWidth - iframeWidth - 20 : mouseX;
+        const posY = (mouseY + iframeHeight > window.innerHeight) ?
+            window.innerHeight - iframeHeight - 20 : mouseY;
+
+        tafsirIframe.style.width = `${iframeWidth}px`;
+        tafsirIframe.style.height = `${iframeHeight}px`;
+        tafsirIframe.style.left = `${posX}px`;
+        tafsirIframe.style.top = `${posY}px`;
+        tafsirIframe.style.position = 'absolute'; // Ensure position is absolute or fixed for button positioning
+    }
+
+    // Add mobile-friendly styles
+    tafsirIframe.style.zIndex = '1000';
+    tafsirIframe.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+    tafsirIframe.style.borderRadius = '10px';
+    tafsirIframe.style.backgroundColor = 'white';
+    tafsirIframe.style.display = "block";
+
+    // Add close button
+    let closeButton = document.getElementById("iframeCloseButton");
+    if (!closeButton) {
+        closeButton = document.createElement("div");
+        closeButton.id = "iframeCloseButton";
+        document.body.appendChild(closeButton);
+
+        // Style for close button
+        closeButton.style.position = 'absolute';
+        closeButton.style.width = '20px';
+        closeButton.style.textAlign = "center";
+        closeButton.style.height = '20px';
+        closeButton.style.borderRadius = '50%';
+        closeButton.style.background = 'linear-gradient(to bottom, #f44336, #d32f2f)'; /* Red gradient */
+        closeButton.style.color = 'white';
+        closeButton.style.fontSize = '14px';
+        closeButton.style.fontWeight = 'bold';
+        closeButton.style.display = 'flex';
+        closeButton.style.justifyContent = 'center';
+        closeButton.style.alignItems = 'center';
+        closeButton.style.cursor = 'pointer';
+        closeButton.innerHTML = 'X';
+        closeButton.style.zIndex = '1001'; /* Ensure it's on top of the iframe */
+    }
+
+    // Position the close button at the top right of the iframe
+    const iframeRect = tafsirIframe.getBoundingClientRect();
+    closeButton.style.top = `${iframeRect.top - 10 + window.scrollY}px`; // Adjust as needed, consider scroll
+    closeButton.style.left = `${iframeRect.right - 10 - 20 + window.scrollX}px`; // Adjust as needed, consider scroll
+    closeButton.style.display = 'block'; // Make sure it's visible
+
+    // Event listener to close iframe and button
+    closeButton.onclick = function() {
+        tafsirIframe.style.display = 'none';
+        closeButton.style.display = 'none';
+    };
 }
 
 function copyText(ayaSpan) {

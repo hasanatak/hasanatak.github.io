@@ -463,45 +463,7 @@ display: none !important;
 display: none !important;
 }
 
-/* Tooltip basic styles */
-.tooltip {
-position: absolute;
-background-color: rgba(0, 0, 0, 0.8);
-color: white;
-padding: 5px 10px;
-border-radius: 4px;
-z-index: 1020;
-display: none;
-white-space: nowrap;
-pointer-events: none;
- font-family: 'Arial', sans-serif;
 
-}
-
-.tooltip.active {
-display: block;
-}
-
-/* Style for icons inside the tooltip */
-.tooltip-icon {
-margin: 0 5px;
-cursor: pointer;
-font-size: 18px;
-
-}
-
-.tooltip-close {
-position: absolute;
-top: 5px;
-right: 5px;
-color: white;
-cursor: pointer;
-font-size: 16px;
-}
-
-.tooltip-close:hover {
-color: #ccc;
-}
 
 /* Style for the Tafsir iframe */
 .tafsir-iframe {
@@ -513,6 +475,11 @@ z-index: 1010;
 display: none;
 box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
+
+.tooltip-icon{
+    margin-left: 6px;
+}
+
 .tooltip-icon:hover {
 transform: scale(1.2);
 transition: transform 0.2s ease-in-out;
@@ -761,17 +728,19 @@ body {
 /* --- Tooltip --- */
 .tooltip {
     position: fixed;
-    background-color: var(--tooltip-bg-color);
-    border: 2px solid var(--tooltip-border-color); /*  Thicker border */
-    border-radius: 12px; /*  More rounded */
-    padding: 1.2rem;  /* More padding */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Stronger shadow */
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 1.2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     z-index: 1001;
     display: none;
     max-width: 80%;
     opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    transform: translateY(-15px); /* More offset */
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    transform: translateY(-15px);
     pointer-events: none;
 }
 .tooltip.active {
@@ -797,12 +766,7 @@ body {
         color: var(--primary-color);
         transform: scale(1.2); /*  Slightly larger */
 }
-    .tooltip iframe {
-    width: 100%;
-    height: 350px;  /*  Slightly taller */
-    border: none;
-    border-radius: 8px; /*  More rounded */
-}
+
 
 
 
